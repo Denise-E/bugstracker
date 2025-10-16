@@ -1,5 +1,8 @@
 package ar.edu.up.bugtracker;
 
+import ar.edu.up.bugtracker.controller.UserController;
+import ar.edu.up.bugtracker.dao.UserDao;
+import ar.edu.up.bugtracker.service.UserService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
@@ -9,12 +12,14 @@ public class Main {
         EntityManagerFactory emf = null;
         EntityManager em = null;
         try {
+            // wiring básico
             emf = Persistence.createEntityManagerFactory("bugtrackerPU");
             em = emf.createEntityManager();
 
-            // Prueba de round-trip con la base: SELECT 1
-            Object result = em.createNativeQuery("SELECT 1").getSingleResult();
-            System.out.println("Conexión OK. SELECT 1 => " + result);
+            UserDao UserDao = new UserDao(em);
+            UserService UserService = new UserService(UserDao, em);
+            UserController UserController = new UserController(UserService);
+
         } catch (Exception e) {
             e.printStackTrace();
             System.err.println("Error al inicializar JPA/Hibernate: " + e.getMessage());
