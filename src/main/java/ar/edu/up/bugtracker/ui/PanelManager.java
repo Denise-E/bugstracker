@@ -14,7 +14,7 @@ import java.awt.*;
 
 public class PanelManager extends JFrame {
 
-    private final UserController usuarioController;
+    private final UserController userController;
 
     // Estado de sesión
     private UserLoggedInDto currentUser;
@@ -30,9 +30,9 @@ public class PanelManager extends JFrame {
     private MiPerfilPanel miPerfilPanel;
     private UsuariosListPanel usuariosListPanel;
 
-    public PanelManager(UserController usuarioController) {
-        super("BugTracker - Darwin AI");
-        this.usuarioController = usuarioController;
+    public PanelManager(UserController userController) {
+        super("BugTracker");
+        this.userController = userController;
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(900, 600));
@@ -52,13 +52,13 @@ public class PanelManager extends JFrame {
     public void showLogin() {
         // header fuera en login/registro
         if (headerPanel != null) remove(headerPanel);
-        loginPanel = new LoginPanel(this, usuarioController);
+        loginPanel = new LoginPanel(this, userController);
         swapCenter(loginPanel);
     }
 
     public void showRegister() {
         if (headerPanel != null) remove(headerPanel);
-        registerPanel = new RegisterPanel(this, usuarioController);
+        registerPanel = new RegisterPanel(this, userController);
         swapCenter(registerPanel);
     }
 
@@ -76,10 +76,10 @@ public class PanelManager extends JFrame {
     private void buildHeader() {
         if (headerPanel != null) remove(headerPanel);
         headerPanel = new HeaderPanel(
-                () -> showHome(),
-                () -> showMiPerfil(),
-                () -> showUsuarios(),
-                () -> logout(),
+                this::showHome,
+                this::showMiPerfil,
+                this::showUsuarios,
+                this::logout,
                 isAdmin()
         );
         add(headerPanel, BorderLayout.NORTH);
@@ -98,7 +98,7 @@ public class PanelManager extends JFrame {
             showLogin();
             return;
         }
-        miPerfilPanel = new MiPerfilPanel(this, usuarioController, currentUser);
+        miPerfilPanel = new MiPerfilPanel(this, userController, currentUser);
         swapCenter(miPerfilPanel);
     }
 
@@ -107,7 +107,7 @@ public class PanelManager extends JFrame {
             JOptionPane.showMessageDialog(this, "Acceso restringido a administradores.");
             return;
         }
-        usuariosListPanel = new UsuariosListPanel(this, usuarioController);
+        usuariosListPanel = new UsuariosListPanel(this, userController);
         swapCenter(usuariosListPanel);
     }
 
