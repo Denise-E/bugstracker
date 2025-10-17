@@ -107,7 +107,7 @@ public class PanelManager extends JFrame {
             JOptionPane.showMessageDialog(this, "Acceso restringido a administradores.");
             return;
         }
-        usuariosListPanel = new UsuariosListPanel(this, userController);
+        usuariosListPanel = new UsuariosListPanel(userController);
         swapCenter(usuariosListPanel);
     }
 

@@ -16,12 +16,11 @@ public class MiPerfilPanel extends JPanel {
     private final UserController controller;
     private final UserLoggedInDto session;
 
-    // Campos editables
     private final JTextField txtNombre = new JTextField(18);
     private final JTextField txtApellido = new JTextField(18);
-    private final JTextField txtEmail = new JTextField(24);       // editable? → Sí, tu flujo dice que Mi Perfil puede modificar todo excepto rol y contraseña
-    private final JTextField txtPerfil = new JTextField(10);      // NO editable
-    private final JPasswordField txtPassword = new JPasswordField(24); // NO visible en edición, lo dejamos disabled
+    private final JTextField txtEmail = new JTextField(24);
+    private final JTextField txtPerfil = new JTextField(10);
+    private final JPasswordField txtPassword = new JPasswordField(24);
 
     public MiPerfilPanel(PanelManager manager, UserController controller, UserLoggedInDto session) {
         this.manager = manager;
@@ -30,6 +29,9 @@ public class MiPerfilPanel extends JPanel {
         buildUI();
         loadData();
     }
+
+    private JButton btnGuardar;
+    private JButton btnCancelar;
 
     private void buildUI() {
         setLayout(new GridBagLayout());
@@ -59,24 +61,28 @@ public class MiPerfilPanel extends JPanel {
         txtPassword.setEnabled(false);
         gbc.gridx=1; add(txtPassword, gbc);
 
-        JButton btnGuardar = new JButton("Guardar cambios");
-        JButton btnReset = new JButton("Revertir");
-        gbc.gridy++; gbc.gridx=0; add(btnGuardar, gbc);
-        gbc.gridx=1; add(btnReset, gbc);
+        // Botones: izq = Cancelar cambios (pequeño), der = Guardar cambios (grande)
+        btnCancelar = new JButton("Cancelar cambios");
+        btnGuardar  = new JButton("Guardar cambios");
+        btnGuardar.setPreferredSize(new Dimension(180, 36)); // más grande a la derecha
+
+        gbc.gridy++; gbc.gridx=0; gbc.anchor = GridBagConstraints.WEST;
+        add(btnCancelar, gbc);
+        gbc.gridx=1; gbc.anchor = GridBagConstraints.EAST;
+        add(btnGuardar, gbc);
 
         btnGuardar.addActionListener(e -> doUpdate());
-        btnReset.addActionListener(e -> loadData());
+        btnCancelar.addActionListener(e -> loadData());
     }
 
     private void loadData() {
-        // Traer detalle actualizado
         try {
             UserDetailDto dto = controller.getById(session.getId());
             txtNombre.setText(dto.getNombre());
             txtApellido.setText(dto.getApellido());
             txtEmail.setText(dto.getEmail());
             txtPerfil.setText(dto.getPerfil());
-            txtPassword.setText("********"); // no editable
+            txtPassword.setText("********");
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "No se pudo cargar el perfil: " + e.getMessage());
         }
@@ -85,7 +91,6 @@ public class MiPerfilPanel extends JPanel {
     private void doUpdate() {
         String nombre = txtNombre.getText().trim();
         String apellido = txtApellido.getText().trim();
-        String email = txtEmail.getText().trim(); // si no querés que sea editable acá, deshabilitá el campo y eliminá este set
 
         if (nombre.isEmpty()) {
             JOptionPane.showMessageDialog(this, "El nombre es obligatorio.");
@@ -99,21 +104,13 @@ public class MiPerfilPanel extends JPanel {
                     UserUpdateCmd cmd = new UserUpdateCmd();
                     cmd.setNombre(nombre);
                     cmd.setApellido(apellido);
-                    // Si NO deseás permitir cambio de email en Mi Perfil, comentá la próxima línea.
-                    // (Tu definición dice que acá no se edita rol ni contraseña; el email sí puede editarse.)
-                    // Si lo permitís, deberías validar unicidad en Service (ya lo hace).
-                    // cmd.setPerfil(null);
-                    // cmd.setPassword(null);
                     controller.update(session.getId(), cmd);
                     return null;
-                } catch (Exception ex) {
-                    this.error = ex; return null;
-                }
+                } catch (Exception ex) { this.error = ex; return null; }
             }
             @Override protected void done() {
                 if (error != null) {
-                    String msg = (error instanceof ValidationException) ? error.getMessage()
-                            : "Error al guardar cambios.";
+                    String msg = (error instanceof ValidationException) ? error.getMessage() : "Error al guardar cambios.";
                     JOptionPane.showMessageDialog(MiPerfilPanel.this, msg);
                     return;
                 }

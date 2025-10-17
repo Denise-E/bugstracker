@@ -3,27 +3,26 @@ package ar.edu.up.bugtracker.ui.users;
 import ar.edu.up.bugtracker.controller.UserController;
 import ar.edu.up.bugtracker.exceptions.NotFoundException;
 import ar.edu.up.bugtracker.service.dto.UserDetailDto;
-import ar.edu.up.bugtracker.ui.PanelManager;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
+import javax.swing.border.EmptyBorder;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.EventObject;
 import java.util.List;
 
 public class UsuariosListPanel extends JPanel {
 
-    private final PanelManager manager;
     private final UserController controller;
 
-    private final DefaultTableModel model = new DefaultTableModel(
-            new Object[]{"ID","Nombre","Apellido","Email","Perfil","Creado"}, 0) {
-        @Override public boolean isCellEditable(int row, int column) { return false; }
-    };
-    private final JTable table = new JTable(model);
+    private final UsersTableModel tableModel = new UsersTableModel();
+    private final JTable table = new JTable(tableModel);
 
-    public UsuariosListPanel(PanelManager manager, UserController controller) {
-        this.manager = manager;
+    public UsuariosListPanel(UserController controller) {
         this.controller = controller;
         buildUI();
         refresh();
@@ -31,20 +30,29 @@ public class UsuariosListPanel extends JPanel {
 
     private void buildUI() {
         setLayout(new BorderLayout());
-        add(new JScrollPane(table), BorderLayout.CENTER);
+        setBorder(new EmptyBorder(12,12,12,12)); // margen general
 
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton btnRefresh = new JButton("Refrescar");
-        JButton btnUpdate = new JButton("Actualizar");
-        JButton btnDelete = new JButton("Eliminar");
-        actions.add(btnRefresh);
-        actions.add(btnUpdate);
-        actions.add(btnDelete);
-        add(actions, BorderLayout.SOUTH);
+        // Título
+        JLabel title = new JLabel("Listado de usuarios");
+        title.setFont(title.getFont().deriveFont(Font.BOLD, 18f));
+        add(title, BorderLayout.NORTH);
 
-        btnRefresh.addActionListener(e -> refresh());
-        btnUpdate.addActionListener(e -> openUpdateDialog());
-        btnDelete.addActionListener(e -> doDelete());
+        // Tabla con margen (scroll pane con borde vacío adicional)
+        JScrollPane scroll = new JScrollPane(table);
+        scroll.setBorder(new EmptyBorder(10,0,10,0));
+        add(scroll, BorderLayout.CENTER);
+
+        // Config tabla
+        table.setRowHeight(28);
+        table.setFillsViewportHeight(true);
+
+        // Columna de acciones (última)
+        int actionsCol = tableModel.getColumnCount() - 1;
+        table.getColumnModel().getColumn(actionsCol).setCellRenderer(new ActionsRenderer());
+        table.getColumnModel().getColumn(actionsCol).setCellEditor(new ActionsEditor());
+
+        // Ancho sugerido para acciones
+        table.getColumnModel().getColumn(actionsCol).setPreferredWidth(160);
     }
 
     private void refresh() {
@@ -55,21 +63,13 @@ public class UsuariosListPanel extends JPanel {
                 catch (Exception ex) { this.error = ex; return null; }
             }
             @Override protected void done() {
-                model.setRowCount(0);
                 if (error != null) {
                     JOptionPane.showMessageDialog(UsuariosListPanel.this, "Error al cargar usuarios.");
                     return;
                 }
                 try {
                     List<UserDetailDto> list = get();
-                    DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-                    for (UserDetailDto u : list) {
-                        model.addRow(new Object[]{
-                                u.getId(), u.getNombre(), u.getApellido(),
-                                u.getEmail(), u.getPerfil(),
-                                (u.getCreadoEn()!=null? u.getCreadoEn().format(fmt): "")
-                        });
-                    }
+                    tableModel.setData(list != null ? list : new ArrayList<UserDetailDto>());
                 } catch (Exception e) {
                     JOptionPane.showMessageDialog(UsuariosListPanel.this, "Error inesperado.");
                 }
@@ -77,36 +77,133 @@ public class UsuariosListPanel extends JPanel {
         }.execute();
     }
 
-    private Long getSelectedUserId() {
-        int row = table.getSelectedRow();
-        if (row < 0) return null;
-        return (Long) model.getValueAt(row, 0);
+    // ===== Table Model (sin ID visible) =====
+    private static class UsersTableModel extends AbstractTableModel {
+        private final String[] cols = {"Nombre","Apellido","Email","Perfil","Creado","Acciones"};
+        private final DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        private List<UserDetailDto> data = new ArrayList<UserDetailDto>();
+
+        public void setData(List<UserDetailDto> d) {
+            this.data = d;
+            fireTableDataChanged();
+        }
+
+        public UserDetailDto getAt(int row) {
+            if (row < 0 || row >= data.size()) return null;
+            return data.get(row);
+        }
+
+        @Override public int getRowCount() { return data.size(); }
+        @Override public int getColumnCount() { return cols.length; }
+        @Override public String getColumnName(int col) { return cols[col]; }
+
+        @Override public Object getValueAt(int row, int col) {
+            UserDetailDto u = data.get(row);
+            switch (col) {
+                case 0: return u.getNombre();
+                case 1: return u.getApellido();
+                case 2: return u.getEmail();
+                case 3: return u.getPerfil();
+                case 4: return (u.getCreadoEn() != null ? u.getCreadoEn().format(fmt) : "");
+                case 5: return "ACCIONES"; // placeholder; renderizado con botones
+                default: return "";
+            }
+        }
+
+        @Override public boolean isCellEditable(int rowIndex, int columnIndex) {
+            return columnIndex == (getColumnCount() - 1); // solo columna Acciones
+        }
+
+        @Override public Class<?> getColumnClass(int columnIndex) {
+            return String.class;
+        }
     }
 
-    private void openUpdateDialog() {
-        Long id = getSelectedUserId();
-        if (id == null) {
-            JOptionPane.showMessageDialog(this, "Seleccioná un usuario.");
-            return;
+    // ===== Renderer de botones =====
+    private class ActionsRenderer extends JPanel implements TableCellRenderer {
+        private final JButton btnEdit = new JButton("Editar");
+        private final JButton btnDelete = new JButton("Eliminar");
+
+        public ActionsRenderer() {
+            setLayout(new FlowLayout(FlowLayout.RIGHT, 6, 2));
+            add(btnEdit);
+            add(btnDelete);
+            setOpaque(true);
         }
-        // Solo puede editar email y rol
-        UpdateUsuarioDialog dlg = new UpdateUsuarioDialog(SwingUtilities.getWindowAncestor(this), controller, id, () -> refresh());
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                                                       boolean hasFocus, int row, int column) {
+            setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
+            return this;
+        }
+    }
+
+    // ===== Editor de botones (maneja eventos por fila) =====
+    private class ActionsEditor extends AbstractCellEditor implements TableCellEditor {
+        private final JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 2));
+        private final JButton btnEdit = new JButton("Editar");
+        private final JButton btnDelete = new JButton("Eliminar");
+        private int editingRow = -1;
+
+        public ActionsEditor() {
+            panel.add(btnEdit);
+            panel.add(btnDelete);
+
+            btnEdit.addActionListener(e -> {
+                int row = editingRow;
+                stopCellEditing();
+                onEditRow(row);
+            });
+            btnDelete.addActionListener(e -> {
+                int row = editingRow;
+                stopCellEditing();
+                onDeleteRow(row);
+            });
+        }
+
+        @Override
+        public boolean isCellEditable(EventObject e) { return true; }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected,
+                                                     int row, int column) {
+            editingRow = row;
+            return panel;
+        }
+
+        @Override
+        public Object getCellEditorValue() { return null; }
+    }
+
+    // ===== Acciones por fila =====
+    private void onEditRow(int row) {
+        UserDetailDto dto = tableModel.getAt(row);
+        if (dto == null) return;
+
+        UpdateUsuarioDialog dlg = new UpdateUsuarioDialog(
+                SwingUtilities.getWindowAncestor(this),
+                controller,
+                dto.getId(),     // usamos ID interno sin mostrarlo
+                this::refresh
+        );
         dlg.setVisible(true);
     }
 
-    private void doDelete() {
-        Long id = getSelectedUserId();
-        if (id == null) {
-            JOptionPane.showMessageDialog(this, "Seleccioná un usuario.");
-            return;
-        }
-        int opt = JOptionPane.showConfirmDialog(this, "¿Eliminar usuario " + id + "?", "Confirmar eliminación", JOptionPane.YES_NO_OPTION);
+    private void onDeleteRow(int row) {
+        UserDetailDto dto = tableModel.getAt(row);
+        if (dto == null) return;
+
+        int opt = JOptionPane.showConfirmDialog(
+                this, "¿Eliminar usuario seleccionado?", "Confirmar",
+                JOptionPane.YES_NO_OPTION
+        );
         if (opt != JOptionPane.YES_OPTION) return;
 
         new SwingWorker<Void, Void>() {
             private Exception error;
             @Override protected Void doInBackground() {
-                try { controller.delete(id); return null; }
+                try { controller.delete(dto.getId()); return null; }
                 catch (Exception ex) { this.error = ex; return null; }
             }
             @Override protected void done() {
