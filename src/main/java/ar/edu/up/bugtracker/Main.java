@@ -13,19 +13,19 @@ import javax.swing.*;
 public class Main {
 
     public static void main(String[] args) {
-        // Opcional: asegurar zona horaria coherente con la DB
+        // Asegurar zona horaria coherente con la DB
         System.setProperty("user.timezone", "UTC");
 
         // Boot de JPA/Hibernate
         EntityManagerFactory emf = Persistence.createEntityManagerFactory("bugtrackerPU");
         EntityManager em = emf.createEntityManager();
 
-        // Wiring de capas
+        // Inicialización de capas
         UserDao usuarioDao = new UserDao(em);
         UserService usuarioService = new UserService(usuarioDao, em);
         UserController usuarioController = new UserController(usuarioService);
 
-        // Levantar la UI en el EDT (Event Dispatch Thread)
+        // Levantar la UI en Event Dispatch Thread
         SwingUtilities.invokeLater(() -> {
             PanelManager app = new PanelManager(usuarioController);
             app.setVisible(true);

@@ -29,13 +29,10 @@ public class LoginPanel extends JPanel {
     @Override
     public void addNotify() {
         super.addNotify();
-        // Botón por defecto (Enter) = Iniciar sesión
         SwingUtilities.getRootPane(this).setDefaultButton(btnLogin);
     }
 
-    // --- UI ---
-
-    private JButton btnLogin; // necesitamos referencia para setDefaultButton
+    private JButton btnLogin;
 
     private void buildUI() {
         setLayout(new GridBagLayout());
@@ -48,51 +45,45 @@ public class LoginPanel extends JPanel {
         title.setFont(title.getFont().deriveFont(Font.BOLD, 20f));
         title.setHorizontalAlignment(SwingConstants.CENTER);
 
-        // Título centrado
         gbc.gridwidth = 2; gbc.anchor = GridBagConstraints.CENTER;
         add(title, gbc);
 
-        // Email
         gbc.gridwidth = 1; gbc.gridy++; gbc.gridx = 0; gbc.anchor = GridBagConstraints.EAST;
         add(new JLabel("Email:"), gbc);
         gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST;
         add(txtEmail, gbc);
 
-        // Password
         gbc.gridy++; gbc.gridx = 0; gbc.anchor = GridBagConstraints.EAST;
         add(new JLabel("Contraseña:"), gbc);
         gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST;
         add(txtPassword, gbc);
 
-        // Botón principal centrado
         btnLogin = new JButton("Iniciar sesión");
         btnLogin.setPreferredSize(new Dimension(180, 36));
-
-        gbc.gridy++; gbc.gridx = 0; gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.gridy++; gbc.gridx = 0; gbc.gridwidth = 2; gbc.anchor = GridBagConstraints.CENTER;
         add(btnLogin, gbc);
 
-        // “¿Todavía no tenés un usuario? Registrate acá” como hipervínculo, centrado debajo
-        JLabel linkRegister = new JLabel(
-                "<html><a href='#'>¿Todavía no tenés un usuario? Registrate acá</a></html>",
-                SwingConstants.CENTER
-        );
+        JLabel linkRegister = new JLabel(htmlLink(false), SwingConstants.CENTER);
         linkRegister.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-        gbc.gridy++; gbc.gridx = 0; gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.gridy++; gbc.gridx = 0; gbc.gridwidth = 2; gbc.anchor = GridBagConstraints.CENTER;
         add(linkRegister, gbc);
 
-        // Listeners
         btnLogin.addActionListener(e -> doLogin());
         linkRegister.addMouseListener(new MouseAdapter() {
-            @Override public void mouseClicked(MouseEvent e) {
-                manager.showRegister();
-            }
+            @Override public void mouseClicked(MouseEvent e) { manager.showRegister(); }
+            @Override public void mouseEntered(MouseEvent e) { linkRegister.setText(htmlLink(true)); }
+            @Override public void mouseExited(MouseEvent e)  { linkRegister.setText(htmlLink(false)); }
         });
     }
 
-    // --- Acciones ---
+    // HTML del link
+    private String htmlLink(boolean hover) {
+        String text = "¿Todavía no tenés un usuario? Registrate acá";
+        return hover
+                ? "<html><span style='color:#000; text-decoration: underline;'>" + text + "</span></html>"
+                : "<html><span style='color:#000; text-decoration: none;'>" + text + "</span></html>";
+    }
 
     private void doLogin() {
         String email = txtEmail.getText().trim();

@@ -18,12 +18,14 @@ import java.util.List;
 public class UsuariosListPanel extends JPanel {
 
     private final UserController controller;
+    private final Long currentUserId;
 
     private final UsersTableModel tableModel = new UsersTableModel();
     private final JTable table = new JTable(tableModel);
 
-    public UsuariosListPanel(UserController controller) {
+    public UsuariosListPanel(UserController controller, Long currentUserId) {
         this.controller = controller;
+        this.currentUserId = currentUserId;
         buildUI();
         refresh();
     }
@@ -32,26 +34,20 @@ public class UsuariosListPanel extends JPanel {
         setLayout(new BorderLayout());
         setBorder(new EmptyBorder(12,12,12,12)); // margen general
 
-        // Título
         JLabel title = new JLabel("Listado de usuarios");
         title.setFont(title.getFont().deriveFont(Font.BOLD, 18f));
         add(title, BorderLayout.NORTH);
 
-        // Tabla con margen (scroll pane con borde vacío adicional)
         JScrollPane scroll = new JScrollPane(table);
         scroll.setBorder(new EmptyBorder(10,0,10,0));
         add(scroll, BorderLayout.CENTER);
 
-        // Config tabla
         table.setRowHeight(28);
         table.setFillsViewportHeight(true);
 
-        // Columna de acciones (última)
         int actionsCol = tableModel.getColumnCount() - 1;
         table.getColumnModel().getColumn(actionsCol).setCellRenderer(new ActionsRenderer());
         table.getColumnModel().getColumn(actionsCol).setCellEditor(new ActionsEditor());
-
-        // Ancho sugerido para acciones
         table.getColumnModel().getColumn(actionsCol).setPreferredWidth(160);
     }
 
@@ -68,8 +64,17 @@ public class UsuariosListPanel extends JPanel {
                     return;
                 }
                 try {
-                    List<UserDetailDto> list = get();
-                    tableModel.setData(list != null ? list : new ArrayList<UserDetailDto>());
+                    List<UserDetailDto> all = get();
+                    List<UserDetailDto> filtered = new ArrayList<UserDetailDto>();
+                    if (all != null) {
+                        for (UserDetailDto u : all) {
+                            if (currentUserId != null && u.getId() != null && u.getId().equals(currentUserId)) {
+                                continue; // ocultar usuario logueado
+                            }
+                            filtered.add(u);
+                        }
+                    }
+                    tableModel.setData(filtered);
                 } catch (Exception e) {
                     JOptionPane.showMessageDialog(UsuariosListPanel.this, "Error inesperado.");
                 }
@@ -77,7 +82,7 @@ public class UsuariosListPanel extends JPanel {
         }.execute();
     }
 
-    // ===== Table Model (sin ID visible) =====
+    // Tabla
     private static class UsersTableModel extends AbstractTableModel {
         private final String[] cols = {"Nombre","Apellido","Email","Perfil","Creado","Acciones"};
         private final DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
@@ -105,13 +110,13 @@ public class UsuariosListPanel extends JPanel {
                 case 2: return u.getEmail();
                 case 3: return u.getPerfil();
                 case 4: return (u.getCreadoEn() != null ? u.getCreadoEn().format(fmt) : "");
-                case 5: return "ACCIONES"; // placeholder; renderizado con botones
+                case 5: return "ACCIONES";
                 default: return "";
             }
         }
 
         @Override public boolean isCellEditable(int rowIndex, int columnIndex) {
-            return columnIndex == (getColumnCount() - 1); // solo columna Acciones
+            return columnIndex == (getColumnCount() - 1);
         }
 
         @Override public Class<?> getColumnClass(int columnIndex) {
@@ -119,7 +124,7 @@ public class UsuariosListPanel extends JPanel {
         }
     }
 
-    // ===== Renderer de botones =====
+    // Renderer de botones
     private class ActionsRenderer extends JPanel implements TableCellRenderer {
         private final JButton btnEdit = new JButton("Editar");
         private final JButton btnDelete = new JButton("Eliminar");
@@ -139,7 +144,7 @@ public class UsuariosListPanel extends JPanel {
         }
     }
 
-    // ===== Editor de botones (maneja eventos por fila) =====
+    // Editor de botones
     private class ActionsEditor extends AbstractCellEditor implements TableCellEditor {
         private final JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 2));
         private final JButton btnEdit = new JButton("Editar");
@@ -176,7 +181,7 @@ public class UsuariosListPanel extends JPanel {
         public Object getCellEditorValue() { return null; }
     }
 
-    // ===== Acciones por fila =====
+    // Acciones de las filas
     private void onEditRow(int row) {
         UserDetailDto dto = tableModel.getAt(row);
         if (dto == null) return;
@@ -184,7 +189,7 @@ public class UsuariosListPanel extends JPanel {
         UpdateUsuarioDialog dlg = new UpdateUsuarioDialog(
                 SwingUtilities.getWindowAncestor(this),
                 controller,
-                dto.getId(),     // usamos ID interno sin mostrarlo
+                dto.getId(),
                 this::refresh
         );
         dlg.setVisible(true);
@@ -194,9 +199,15 @@ public class UsuariosListPanel extends JPanel {
         UserDetailDto dto = tableModel.getAt(row);
         if (dto == null) return;
 
-        int opt = JOptionPane.showConfirmDialog(
-                this, "¿Eliminar usuario seleccionado?", "Confirmar",
-                JOptionPane.YES_NO_OPTION
+        int opt = JOptionPane.showOptionDialog(
+                this,
+                "¿Estás seguro que deseas borrar al usuario? Esta acción no puede deshacerse.",
+                "Confirmar eliminación",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE,
+                null,
+                new Object[]{"Sí", "No"},
+                "No"                         // opción por defecto
         );
         if (opt != JOptionPane.YES_OPTION) return;
 

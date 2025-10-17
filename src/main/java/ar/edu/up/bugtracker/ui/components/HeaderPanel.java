@@ -2,7 +2,6 @@ package ar.edu.up.bugtracker.ui.components;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.function.Consumer;
 
 public class HeaderPanel extends JPanel {
 

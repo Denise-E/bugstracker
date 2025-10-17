@@ -10,11 +10,11 @@ CREATE DATABASE IF NOT EXISTS bugtracker CHARACTER SET utf8mb4 COLLATE utf8mb4_u
 USE bugtracker;
 
 -- =========================================================
--- 1) Catálogo de perfiles
+-- Catálogo de perfiles
 -- =========================================================
 CREATE TABLE IF NOT EXISTS perfil_usuario (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  nombre VARCHAR(50) NOT NULL,           -- ADMIN, USUARIO
+  nombre VARCHAR(50) NOT NULL,
   PRIMARY KEY (id),
   UNIQUE KEY uq_perfil_usuario_nombre (nombre)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -26,13 +26,13 @@ INSERT INTO perfil_usuario (nombre) VALUES
 ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
 
 -- =========================================================
--- 2) Usuarios
+-- Usuarios
 -- =========================================================
 CREATE TABLE IF NOT EXISTS usuario (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   nombre VARCHAR(100) NOT NULL,
-  apellido VARCHAR(100) NULL,
-  email VARCHAR(255) NOT NULL,           -- sin UNIQUE por alcance (podés agregarlo luego)
+  apellido VARCHAR(100) NOT NULL,
+  email VARCHAR(255) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,   -- hash (ej. Base64 de SHA-256)
   password_salt  VARCHAR(255) NULL,      -- salt si lo usás (Base64)
   perfil_id BIGINT UNSIGNED NOT NULL,
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS usuario (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =========================================================
--- 3) Proyectos
+-- Proyectos
 -- =========================================================
 CREATE TABLE IF NOT EXISTS proyecto (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -53,16 +53,14 @@ CREATE TABLE IF NOT EXISTS proyecto (
   descripcion TEXT NULL,
   creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id)
-  -- Podés agregar UNIQUE(nombre) si lo necesitás más adelante
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =========================================================
--- 4) Catálogo de estados de incidencia
---    (usar exactamente estas etiquetas en tu lógica/UI)
+-- Catálogo de estados de incidencia
 -- =========================================================
 CREATE TABLE IF NOT EXISTS incidencia_estado (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  nombre VARCHAR(50) NOT NULL,           -- NUEVA, EN_PROCESO, BLOQUEADA, EN_REVISION, TERMINADA
+  nombre VARCHAR(50) NOT NULL,
   PRIMARY KEY (id),
   UNIQUE KEY uq_incidencia_estado_nombre (nombre)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -77,15 +75,15 @@ INSERT INTO incidencia_estado (nombre) VALUES
 ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
 
 -- =========================================================
--- 5) Incidencias (puntero a versión actual se agrega FK al final)
+-- Incidencias
 -- =========================================================
 CREATE TABLE IF NOT EXISTS incidencia (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   proyecto_id BIGINT UNSIGNED NOT NULL,
-  responsable_id BIGINT UNSIGNED NULL,   -- asignable
+  responsable_id BIGINT UNSIGNED NULL,
   descripcion TEXT NOT NULL,
-  estimacion_horas DECIMAL(10,2) NULL,   -- horas estimadas (opcional)
-  current_version_id BIGINT UNSIGNED NULL, -- FK circular (se agrega al final)
+  estimacion_horas DECIMAL(10,2) NULL,
+  current_version_id BIGINT UNSIGNED NULL,
   creado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_incidencia_proyecto (proyecto_id),
@@ -100,16 +98,15 @@ CREATE TABLE IF NOT EXISTS incidencia (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =========================================================
--- 6) Versiones/Historial de Incidencia (cronología de cambios)
---    Cada registro representa un "hito" (p.ej., cambio de estado).
+-- Versiones/Historial de Incidencia
 -- =========================================================
 CREATE TABLE IF NOT EXISTS incidencia_version (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   incidencia_id BIGINT UNSIGNED NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_by BIGINT UNSIGNED NOT NULL,   -- usuario que hizo el cambio
+  created_by BIGINT UNSIGNED NOT NULL,
   estado_id BIGINT UNSIGNED NOT NULL,
-  detalles JSON NULL,                    -- JSON (MySQL) para metadatos opcionales
+  detalles JSON NULL,
   PRIMARY KEY (id),
   KEY idx_incver_incidencia (incidencia_id),
   KEY idx_incver_created_at (created_at),
@@ -125,8 +122,7 @@ CREATE TABLE IF NOT EXISTS incidencia_version (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =========================================================
--- 7) Comentarios (timeline tipo Linear: mensajes generales)
---    Si en el futuro querés "anclarlos" a una versión, añadís version_id (NULLable).
+-- Comentarios
 -- =========================================================
 CREATE TABLE IF NOT EXISTS comentario (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -145,9 +141,6 @@ CREATE TABLE IF NOT EXISTS comentario (
     ON UPDATE RESTRICT ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- =========================================================
--- 8) Completar la FK circular: incidencia.current_version_id → incidencia_version.id
---    (Se hace al final porque incidencia_version depende de incidencia)
 -- =========================================================
 ALTER TABLE incidencia
   ADD CONSTRAINT fk_incidencia_current_version

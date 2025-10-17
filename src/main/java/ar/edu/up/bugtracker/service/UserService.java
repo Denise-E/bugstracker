@@ -31,13 +31,9 @@ public class UserService {
         this.em = em;
     }
 
-    // ===== Casos de uso =====
-
     public Long register(UserRegisterCmd cmd) {
-        // Semántica de negocio
         String email = normEmail(cmd.getEmail());
         if (usuarioDao.existsByEmail(email)) {
-            // En el borde HTTP mapear esto a 409 si querés.
             throw new ValidationException("Email ya registrado");
         }
 
@@ -57,7 +53,6 @@ public class UserService {
         u.setPasswordSalt(salt);
         u.setPerfil(perfil);
 
-        // Transacción controlada en Service
         try {
             begin();
             Long id = usuarioDao.create(u);
@@ -140,7 +135,7 @@ public class UserService {
         }
     }
 
-    // ===== Helpers de negocio / transacciones =====
+    // Helpers
 
     private PerfilUsuario resolvePerfil(String nombrePerfil) {
         if (isBlank(nombrePerfil)) return null;

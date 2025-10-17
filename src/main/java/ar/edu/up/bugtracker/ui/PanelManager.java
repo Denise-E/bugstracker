@@ -39,18 +39,17 @@ public class PanelManager extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
-        // Contenedor central donde “montamos” pantallas
+        // Contenedor central donde se montan las pantallas
         root = new JPanel(new BorderLayout());
         add(root, BorderLayout.CENTER);
 
-        // Primera vista: login
         showLogin();
     }
 
-    // ====== Navegación ======
+    // Navegación
 
     public void showLogin() {
-        // header fuera en login/registro
+        // Header fuera en login/registro
         if (headerPanel != null) remove(headerPanel);
         loginPanel = new LoginPanel(this, userController);
         swapCenter(loginPanel);
@@ -107,11 +106,11 @@ public class PanelManager extends JFrame {
             JOptionPane.showMessageDialog(this, "Acceso restringido a administradores.");
             return;
         }
-        usuariosListPanel = new UsuariosListPanel(userController);
+        Long currentId = (currentUser != null ? currentUser.getId() : null);
+        usuariosListPanel = new UsuariosListPanel(userController, currentId);
         swapCenter(usuariosListPanel);
     }
 
-    // ====== Util ======
     private void swapCenter(JComponent view) {
         root.removeAll();
         root.add(view, BorderLayout.CENTER);

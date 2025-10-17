@@ -61,7 +61,6 @@ public class MiPerfilPanel extends JPanel {
         txtPassword.setEnabled(false);
         gbc.gridx=1; add(txtPassword, gbc);
 
-        // Botones: izq = Cancelar cambios (pequeño), der = Guardar cambios (grande)
         btnCancelar = new JButton("Cancelar cambios");
         btnGuardar  = new JButton("Guardar cambios");
         btnGuardar.setPreferredSize(new Dimension(180, 36)); // más grande a la derecha

@@ -20,7 +20,7 @@ public class UserDao implements IDao<Usuario, Long> {
     @Override
     public Long create(Usuario entity) {
         try {
-            em.persist(entity);                 // transacción abierta por el Service
+            em.persist(entity);
             return entity.getId();
         } catch (Exception e) {
             throw new DaoException("Error creando usuario", e);
@@ -49,7 +49,7 @@ public class UserDao implements IDao<Usuario, Long> {
     @Override
     public void update(Usuario entity) {
         try {
-            em.merge(entity);                    // transacción abierta por el Service
+            em.merge(entity);
         } catch (Exception e) {
             throw new DaoException("Error actualizando usuario", e);
         }
@@ -60,14 +60,12 @@ public class UserDao implements IDao<Usuario, Long> {
         try {
             Usuario managed = em.find(Usuario.class, id);
             if (managed != null) {
-                em.remove(managed);             // transacción abierta por el Service
+                em.remove(managed);
             }
         } catch (Exception e) {
             throw new DaoException("Error eliminando usuario", e);
         }
     }
-
-    // ===== Métodos específicos =====
 
     public Usuario findByEmail(String email) {
         try {
