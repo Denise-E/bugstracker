@@ -9,6 +9,8 @@ import ar.edu.up.bugtracker.ui.PanelManager;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class LoginPanel extends JPanel {
 
@@ -24,45 +26,83 @@ public class LoginPanel extends JPanel {
         buildUI();
     }
 
+    @Override
+    public void addNotify() {
+        super.addNotify();
+        // Botón por defecto (Enter) = Iniciar sesión
+        SwingUtilities.getRootPane(this).setDefaultButton(btnLogin);
+    }
+
+    // --- UI ---
+
+    private JButton btnLogin; // necesitamos referencia para setDefaultButton
+
     private void buildUI() {
         setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(6, 6, 6, 6);
+        gbc.insets = new Insets(8, 8, 8, 8);
         gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.gridx = 0; gbc.gridy = 0;
 
         JLabel title = new JLabel("Iniciar sesión");
-        title.setFont(title.getFont().deriveFont(Font.BOLD, 18f));
+        title.setFont(title.getFont().deriveFont(Font.BOLD, 20f));
+        title.setHorizontalAlignment(SwingConstants.CENTER);
 
-        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2; add(title, gbc);
+        // Título centrado
+        gbc.gridwidth = 2; gbc.anchor = GridBagConstraints.CENTER;
+        add(title, gbc);
 
-        gbc.gridwidth = 1;
-        gbc.gridy++; gbc.gridx = 0; add(new JLabel("Email:"), gbc);
-        gbc.gridx = 1; add(txtEmail, gbc);
+        // Email
+        gbc.gridwidth = 1; gbc.gridy++; gbc.gridx = 0; gbc.anchor = GridBagConstraints.EAST;
+        add(new JLabel("Email:"), gbc);
+        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST;
+        add(txtEmail, gbc);
 
-        gbc.gridy++; gbc.gridx = 0; add(new JLabel("Contraseña:"), gbc);
-        gbc.gridx = 1; add(txtPassword, gbc);
+        // Password
+        gbc.gridy++; gbc.gridx = 0; gbc.anchor = GridBagConstraints.EAST;
+        add(new JLabel("Contraseña:"), gbc);
+        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST;
+        add(txtPassword, gbc);
 
-        JButton btnLogin = new JButton("Iniciar sesión");
-        JButton btnRegister = new JButton("Registrarme");
+        // Botón principal centrado
+        btnLogin = new JButton("Iniciar sesión");
+        btnLogin.setPreferredSize(new Dimension(180, 36));
 
-        gbc.gridy++; gbc.gridx = 0; add(btnLogin, gbc);
-        gbc.gridx = 1; add(btnRegister, gbc);
+        gbc.gridy++; gbc.gridx = 0; gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.CENTER;
+        add(btnLogin, gbc);
 
+        // “¿Todavía no tenés un usuario? Registrate acá” como hipervínculo, centrado debajo
+        JLabel linkRegister = new JLabel(
+                "<html><a href='#'>¿Todavía no tenés un usuario? Registrate acá</a></html>",
+                SwingConstants.CENTER
+        );
+        linkRegister.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        gbc.gridy++; gbc.gridx = 0; gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.CENTER;
+        add(linkRegister, gbc);
+
+        // Listeners
         btnLogin.addActionListener(e -> doLogin());
-        btnRegister.addActionListener(e -> manager.showRegister());
+        linkRegister.addMouseListener(new MouseAdapter() {
+            @Override public void mouseClicked(MouseEvent e) {
+                manager.showRegister();
+            }
+        });
     }
+
+    // --- Acciones ---
 
     private void doLogin() {
         String email = txtEmail.getText().trim();
         String pass = new String(txtPassword.getPassword());
 
-        // Validación superficial (controller también valida)
         if (email.isEmpty() || pass.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Completá email y contraseña.");
             return;
         }
 
-        // No bloquear el EDT
         new SwingWorker<UserLoggedInDto, Void>() {
             private Exception error;
             @Override protected UserLoggedInDto doInBackground() {
@@ -72,8 +112,7 @@ public class LoginPanel extends JPanel {
                     cmd.setPassword(pass);
                     return controller.login(cmd);
                 } catch (Exception ex) {
-                    this.error = ex;
-                    return null;
+                    this.error = ex; return null;
                 }
             }
             @Override protected void done() {

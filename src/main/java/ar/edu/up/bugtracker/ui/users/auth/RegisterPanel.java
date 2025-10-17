@@ -17,7 +17,8 @@ public class RegisterPanel extends JPanel {
     private final JTextField txtApellido = new JTextField(18);
     private final JTextField txtEmail = new JTextField(24);
     private final JPasswordField txtPassword = new JPasswordField(24);
-    private final JComboBox<String> cbPerfil = new JComboBox<>(new String[] {"USUARIO"}); // Autoregistro: solo USUARIO
+    // Mostrar ambos roles: USUARIO y ADMIN
+    private final JComboBox<String> cbPerfil = new JComboBox<>(new String[] {"USUARIO", "ADMIN"});
 
     public RegisterPanel(PanelManager manager, UserController controller) {
         this.manager = manager;
@@ -25,45 +26,71 @@ public class RegisterPanel extends JPanel {
         buildUI();
     }
 
+    @Override
+    public void addNotify() {
+        super.addNotify();
+        // Botón por defecto = Registrarme
+        SwingUtilities.getRootPane(this).setDefaultButton(btnOk);
+    }
+
+    // --- UI ---
+
+    private JButton btnOk;     // "Registrarme"
+    private JButton btnCancel; // "Cancelar"
+
     private void buildUI() {
         setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(6, 6, 6, 6);
+        gbc.insets = new Insets(8, 8, 8, 8);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         JLabel title = new JLabel("Registro de usuario");
-        title.setFont(title.getFont().deriveFont(Font.BOLD, 18f));
+        title.setFont(title.getFont().deriveFont(Font.BOLD, 20f));
+        title.setHorizontalAlignment(SwingConstants.CENTER);
 
-        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2; add(title, gbc);
-        gbc.gridwidth = 1;
+        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2; gbc.anchor = GridBagConstraints.CENTER;
+        add(title, gbc);
+
+        gbc.gridwidth = 1; gbc.anchor = GridBagConstraints.EAST;
 
         gbc.gridy++; gbc.gridx = 0; add(new JLabel("Nombre*:"), gbc);
-        gbc.gridx = 1; add(txtNombre, gbc);
+        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; add(txtNombre, gbc);
+        gbc.anchor = GridBagConstraints.EAST;
 
         gbc.gridy++; gbc.gridx = 0; add(new JLabel("Apellido:"), gbc);
-        gbc.gridx = 1; add(txtApellido, gbc);
+        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; add(txtApellido, gbc);
+        gbc.anchor = GridBagConstraints.EAST;
 
         gbc.gridy++; gbc.gridx = 0; add(new JLabel("Email*:"), gbc);
-        gbc.gridx = 1; add(txtEmail, gbc);
+        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; add(txtEmail, gbc);
+        gbc.anchor = GridBagConstraints.EAST;
 
         gbc.gridy++; gbc.gridx = 0; add(new JLabel("Contraseña*:"), gbc);
-        gbc.gridx = 1; add(txtPassword, gbc);
+        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; add(txtPassword, gbc);
+        gbc.anchor = GridBagConstraints.EAST;
 
-        gbc.gridy++; gbc.gridx = 0; add(new JLabel("Perfil:"), gbc);
-        gbc.gridx = 1; add(cbPerfil, gbc);
+        gbc.gridy++; gbc.gridx = 0; add(new JLabel("Rol*:"), gbc);
+        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; add(cbPerfil, gbc);
 
-        JButton btnOk = new JButton("Registrarme");
-        JButton btnCancel = new JButton("Cancelar");
+        // Botones: Cancelar (izquierda) y Registrarme (derecha, más grande)
+        btnCancel = new JButton("Cancelar");
+        btnOk = new JButton("Registrarme");
+        btnOk.setPreferredSize(new Dimension(180, 36)); // “más grande”
 
-        gbc.gridy++; gbc.gridx = 0; add(btnOk, gbc);
-        gbc.gridx = 1; add(btnCancel, gbc);
+        gbc.gridy++; gbc.gridx = 0; gbc.anchor = GridBagConstraints.WEST;
+        add(btnCancel, gbc);
+        gbc.gridx = 1; gbc.anchor = GridBagConstraints.EAST;
+        add(btnOk, gbc);
 
+        // Listeners
         btnOk.addActionListener(e -> doRegister());
         btnCancel.addActionListener(e -> {
             clearForm();
             manager.showLogin();
         });
     }
+
+    // --- Acciones ---
 
     private void clearForm() {
         txtNombre.setText("");
@@ -92,7 +119,7 @@ public class RegisterPanel extends JPanel {
                     cmd.setApellido(txtApellido.getText().trim());
                     cmd.setEmail(email);
                     cmd.setPassword(pass);
-                    cmd.setPerfil(cbPerfil.getSelectedItem().toString()); // USUARIO
+                    cmd.setPerfil(cbPerfil.getSelectedItem().toString());
                     return controller.register(cmd);
                 } catch (Exception ex) {
                     this.error = ex; return null;
