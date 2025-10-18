@@ -21,7 +21,7 @@ Este módulo es la base para avanzar luego con **Proyectos**, **Incidencias** y 
 * Java 11 (JDK) y Maven instalados.
 * MySQL 8 en ejecución.
 * Base de datos creada con el esquema del proyecto adjuntado (archivo bugstracker_db_creation.sql).
-* Archivo de configuración de persistencia ajustado con tus credenciales (usuario, contraseña y URL de la base).
+* Configuración de las credenciales de la abse de datos en config > local.properties. Se proporciona un archivo de ejemplo con las variabels necesarias.
 
 ---
 

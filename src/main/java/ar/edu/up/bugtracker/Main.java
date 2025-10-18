@@ -9,15 +9,29 @@ import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 
 import javax.swing.*;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Map;
+import java.util.Properties;
 
 public class Main {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         // Asegurar zona horaria coherente con la DB
         System.setProperty("user.timezone", "UTC");
 
+        Properties p = new Properties();
+
+        try (var in = Files.newInputStream(Paths.get("config/local.properties"))) { p.load(in); }
+        Map<String,Object> props = Map.of(
+                "jakarta.persistence.jdbc.url",  p.getProperty("db.url"),
+                "jakarta.persistence.jdbc.user", p.getProperty("db.user"),
+                "jakarta.persistence.jdbc.password", p.getProperty("db.pass")
+        );
+
         // Boot de JPA/Hibernate
-        EntityManagerFactory emf = Persistence.createEntityManagerFactory("bugtrackerPU");
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory("bugtrackerPU", props);
         EntityManager em = emf.createEntityManager();
 
         // Inicialización de capas
