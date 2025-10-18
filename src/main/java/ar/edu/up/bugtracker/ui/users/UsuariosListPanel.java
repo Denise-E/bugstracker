@@ -1,6 +1,7 @@
 package ar.edu.up.bugtracker.ui.users;
 
 import ar.edu.up.bugtracker.controller.UserController;
+import ar.edu.up.bugtracker.controller.UserRoleController;
 import ar.edu.up.bugtracker.exceptions.NotFoundException;
 import ar.edu.up.bugtracker.service.dto.UserDetailDto;
 
@@ -18,14 +19,16 @@ import java.util.List;
 public class UsuariosListPanel extends JPanel {
 
     private final UserController controller;
+    private final UserRoleController userController;
     private final Long currentUserId;
 
     private final UsersTableModel tableModel = new UsersTableModel();
     private final JTable table = new JTable(tableModel);
 
-    public UsuariosListPanel(UserController controller, Long currentUserId) {
+    public UsuariosListPanel(UserController controller, Long currentUserId, UserRoleController userController) {
         this.controller = controller;
         this.currentUserId = currentUserId;
+        this.userController = userController;
         buildUI();
         refresh();
     }
@@ -189,7 +192,8 @@ public class UsuariosListPanel extends JPanel {
         UpdateUsuarioDialog dlg = new UpdateUsuarioDialog(
                 SwingUtilities.getWindowAncestor(this),
                 controller,
-                dto.getId(),
+                userController,
+                currentUserId,
                 this::refresh
         );
         dlg.setVisible(true);

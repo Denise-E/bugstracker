@@ -37,9 +37,9 @@ public class UserService {
             throw new ValidationException("Email ya registrado");
         }
 
-        PerfilUsuario perfil = resolvePerfil(cmd.getPerfil());
+        PerfilUsuario perfil = resolvePerfil(cmd.getPerfilId());
         if (perfil == null) {
-            throw new ValidationException("Perfil inválido: " + cmd.getPerfil());
+            throw new ValidationException("Perfil inválido: " + cmd.getPerfilId());
         }
 
         String salt = generateSalt();
@@ -117,9 +117,9 @@ public class UserService {
             u.setPasswordHash(hash);
         }
 
-        if (!isBlank(cmd.getPerfil())) {
-            PerfilUsuario perfil = resolvePerfil(cmd.getPerfil());
-            if (perfil == null) throw new ValidationException("Perfil inválido: " + cmd.getPerfil());
+        if (cmd.getPerfilId() != null) {
+            PerfilUsuario perfil = resolvePerfil(cmd.getPerfilId());
+            if (perfil == null) throw new ValidationException("Perfil inválido: " + cmd.getPerfilId());
             u.setPerfil(perfil);
         }
 
@@ -148,11 +148,9 @@ public class UserService {
     }
 
     // Helpers
-
-    private PerfilUsuario resolvePerfil(String nombrePerfil) {
-        if (isBlank(nombrePerfil)) return null;
-        String normalized = nombrePerfil.trim().toUpperCase(); // "ADMIN" | "USUARIO"
-        return usuarioDao.findPerfilByNombre(normalized);
+    private PerfilUsuario resolvePerfil(Long perfilId) {
+        if (perfilId == null) return null;
+        return em.find(PerfilUsuario.class, perfilId);
     }
 
     private String normEmail(String email) {

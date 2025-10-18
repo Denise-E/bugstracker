@@ -1,29 +1,37 @@
 package ar.edu.up.bugtracker.ui.users.auth;
 
 import ar.edu.up.bugtracker.controller.UserController;
+import ar.edu.up.bugtracker.controller.UserRoleController;
 import ar.edu.up.bugtracker.exceptions.ValidationException;
+import ar.edu.up.bugtracker.models.PerfilUsuario;
 import ar.edu.up.bugtracker.service.cmd.UserRegisterCmd;
 import ar.edu.up.bugtracker.ui.PanelManager;
 
 import javax.swing.*;
+import javax.swing.plaf.basic.BasicComboBoxRenderer;
 import java.awt.*;
+import java.util.List;
 
 public class RegisterPanel extends JPanel {
 
     private final PanelManager manager;
     private final UserController controller;
+    private final UserRoleController roleController;
 
     private final JTextField txtNombre = new JTextField(18);
     private final JTextField txtApellido = new JTextField(18);
     private final JTextField txtEmail = new JTextField(24);
     private final JPasswordField txtPassword = new JPasswordField(24);
     private final JLabel lblPassHint = new JLabel("La contraseña debe tener al menos 6 caracteres.");
-    private final JComboBox<String> cbPerfil = new JComboBox<>(new String[] {"USUARIO", "ADMIN"});
+    private final JComboBox<PerfilUsuario> cbPerfil = new JComboBox<>();
+    private final JLabel lblRolesHint = new JLabel("Cargando roles...");
 
-    public RegisterPanel(PanelManager manager, UserController controller) {
+    public RegisterPanel(PanelManager manager, UserController controller, UserRoleController roleController) {
         this.manager = manager;
         this.controller = controller;
+        this.roleController = roleController;
         buildUI();
+        loadRolesAsync();
     }
 
     @Override
@@ -71,8 +79,15 @@ public class RegisterPanel extends JPanel {
         gbc.gridy++; gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST;
         add(lblPassHint, gbc);
 
+        // Rol (dinámico) + hint de carga
         gbc.gridy++; gbc.gridx = 0; gbc.anchor = GridBagConstraints.EAST; add(new JLabel("Rol*:"), gbc);
+        cbPerfil.setRenderer(new RoleRenderer());
         gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; add(cbPerfil, gbc);
+
+        lblRolesHint.setFont(lblRolesHint.getFont().deriveFont(Font.PLAIN, 11f));
+        lblRolesHint.setForeground(Color.DARK_GRAY);
+        gbc.gridy++; gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST;
+        add(lblRolesHint, gbc);
 
         // Botones: Cancelar (izq) y Registrarme (der, grande)
         btnCancel = new JButton("Cancelar");
@@ -89,6 +104,10 @@ public class RegisterPanel extends JPanel {
             clearForm();
             manager.showLogin();
         });
+
+        // Mientras cargan roles, evitar registrar
+        btnOk.setEnabled(false);
+        cbPerfil.setEnabled(false);
     }
 
     private void clearForm() {
@@ -96,7 +115,66 @@ public class RegisterPanel extends JPanel {
         txtApellido.setText("");
         txtEmail.setText("");
         txtPassword.setText("");
-        cbPerfil.setSelectedIndex(0);
+        // Seleccionar siempre "USUARIO" como default si existe
+        selectRoleByName("USUARIO");
+    }
+
+    /** Carga de roles desde BD de forma asíncrona y selecciona "USUARIO" por defecto. */
+    private void loadRolesAsync() {
+        new SwingWorker<List<PerfilUsuario>, Void>() {
+            private Exception error;
+            @Override protected List<PerfilUsuario> doInBackground() {
+                try {
+                    return roleController.getAll();
+                } catch (Exception ex) {
+                    this.error = ex; return null;
+                }
+            }
+            @Override protected void done() {
+                if (error != null) {
+                    lblRolesHint.setText("No se pudieron cargar los roles. Contactá al administrador.");
+                    btnOk.setEnabled(false);
+                    cbPerfil.setEnabled(false);
+                    return;
+                }
+                try {
+                    List<PerfilUsuario> roles = get();
+                    DefaultComboBoxModel<PerfilUsuario> model = new DefaultComboBoxModel<>();
+                    if (roles != null) {
+                        for (PerfilUsuario r : roles) model.addElement(r);
+                    }
+                    cbPerfil.setModel(model);
+
+                    boolean hasRoles = cbPerfil.getItemCount() > 0;
+                    lblRolesHint.setText(hasRoles ? " " : "No hay roles configurados. Contactá al administrador.");
+                    btnOk.setEnabled(hasRoles);
+                    cbPerfil.setEnabled(hasRoles);
+
+                    // Default: "USUARIO"
+                    selectRoleByName("USUARIO");
+
+                } catch (Exception e) {
+                    lblRolesHint.setText("Error inesperado al cargar roles.");
+                    btnOk.setEnabled(false);
+                    cbPerfil.setEnabled(false);
+                }
+            }
+        }.execute();
+    }
+
+    /** Selecciona en el combo el rol cuyo nombre coincida (case-insensitive). */
+    private void selectRoleByName(String name) {
+        if (name == null) return;
+        ComboBoxModel<PerfilUsuario> m = cbPerfil.getModel();
+        for (int i = 0; i < m.getSize(); i++) {
+            PerfilUsuario r = m.getElementAt(i);
+            if (r != null && r.getNombre() != null && r.getNombre().equalsIgnoreCase(name)) {
+                cbPerfil.setSelectedIndex(i);
+                return;
+            }
+        }
+        // Si no existe "USUARIO" pero hay roles, seleccionar el primero.
+        if (m.getSize() > 0 && cbPerfil.getSelectedIndex() < 0) cbPerfil.setSelectedIndex(0);
     }
 
     private void doRegister() {
@@ -104,9 +182,10 @@ public class RegisterPanel extends JPanel {
         String apellido = txtApellido.getText().trim();
         String email = txtEmail.getText().trim();
         String pass = new String(txtPassword.getPassword());
+        PerfilUsuario seleccionado = (PerfilUsuario) cbPerfil.getSelectedItem();
 
         // Validaciones solicitadas
-        if (nombre.isEmpty() || apellido.isEmpty() || email.isEmpty() || pass.isEmpty()) {
+        if (nombre.isEmpty() || apellido.isEmpty() || email.isEmpty() || pass.isEmpty() || seleccionado == null) {
             JOptionPane.showMessageDialog(this, "Completá los campos obligatorios (*).");
             return;
         }
@@ -124,7 +203,8 @@ public class RegisterPanel extends JPanel {
                     cmd.setApellido(apellido);
                     cmd.setEmail(email);
                     cmd.setPassword(pass);
-                    cmd.setPerfil(cbPerfil.getSelectedItem().toString());
+                    // enviar FK (ID de rol) al backend
+                    cmd.setPerfilId(seleccionado.getId());
                     return controller.register(cmd);
                 } catch (Exception ex) {
                     this.error = ex; return null;
@@ -141,5 +221,21 @@ public class RegisterPanel extends JPanel {
                 manager.showLogin();
             }
         }.execute();
+    }
+
+    /** Renderer: muestra el nombre del rol en el combo. */
+    private static class RoleRenderer extends BasicComboBoxRenderer {
+        @Override
+        @SuppressWarnings("rawtypes")
+        public Component getListCellRendererComponent(JList list, Object value, int index,
+                                                      boolean isSelected, boolean cellHasFocus) {
+            super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            if (value instanceof PerfilUsuario) {
+                setText(((PerfilUsuario) value).getNombre());
+            } else if (value == null) {
+                setText("");
+            }
+            return this;
+        }
     }
 }

@@ -10,7 +10,6 @@ import ar.edu.up.bugtracker.service.dto.UserLoggedInDto;
 
 import java.util.List;
 
-
 public class UserController {
 
     private final UserService service;
@@ -21,21 +20,24 @@ public class UserController {
 
     // POST /api/users/register
     public Long register(UserRegisterCmd cmd) {
-        if (cmd == null) throw new ValidationException("Solicitud inválida");
-        if (isBlank(cmd.getNombre())) throw new ValidationException("Nombre es requerido");
-        if (isBlank(cmd.getEmail())) throw new ValidationException("Email es requerido");
-        if (isBlank(cmd.getPassword())) throw new ValidationException("Password es requerido");
-        if (isBlank(cmd.getPerfil())) throw new ValidationException("Perfil es requerido");
-        validateEmailFormat(cmd.getEmail());
+        // Validación mínima a nivel controller (sin lógica de negocio)
+        if (cmd == null) throw new ValidationException("Body requerido.");
+        if (isBlank(cmd.getNombre()) || isBlank(cmd.getApellido())
+                || isBlank(cmd.getEmail()) || isBlank(cmd.getPassword())) {
+            throw new ValidationException("Completá nombre, apellido, email y password.");
+        }
+        if (cmd.getPerfilId() == null) {                     // <<< usar ID, no String
+            throw new ValidationException("Debés seleccionar un rol válido.");
+        }
         return service.register(cmd);
     }
 
     // POST /api/users/login
     public UserLoggedInDto login(UserLoginCmd cmd) {
-        if (cmd == null) throw new ValidationException("Solicitud inválida");
-        if (isBlank(cmd.getEmail())) throw new ValidationException("Email es requerido");
-        if (isBlank(cmd.getPassword())) throw new ValidationException("Password es requerido");
-        validateEmailFormat(cmd.getEmail());
+        if (cmd == null) throw new ValidationException("Body requerido.");
+        if (isBlank(cmd.getEmail()) || isBlank(cmd.getPassword())) {
+            throw new ValidationException("Email y password son obligatorios.");
+        }
         return service.login(cmd);
     }
 
@@ -45,39 +47,33 @@ public class UserController {
     }
 
     // GET /api/users/detail/{user_id}
-    public UserDetailDto getById(Long userId) {
-        if (userId == null) throw new ValidationException("Id requerido");
-        return service.getById(userId);
+    public UserDetailDto getById(Long id) {
+        if (id == null) throw new ValidationException("ID requerido.");
+        return service.getById(id);
     }
 
-    // PUT /api/users/update/{user_id}
-    public void update(Long userId, UserUpdateCmd cmd) {
-        if (userId == null) throw new ValidationException("Id requerido");
-        if (cmd == null) throw new ValidationException("Solicitud inválida");
+    // UPDATE /api/users/update/{user_id}
+    public void update(Long id, UserUpdateCmd cmd) {
+        if (id == null) throw new ValidationException("ID requerido.");
+        if (cmd == null) throw new ValidationException("Body requerido.");
 
-        // Validación superficial: al menos un campo para actualizar
-        if (isBlank(cmd.getNombre()) && isBlank(cmd.getApellido())
-                && isBlank(cmd.getPassword()) && isBlank(cmd.getPerfil())) {
-            throw new ValidationException("No hay cambios para aplicar");
+        // al menos un campo informado
+        if (isBlank(cmd.getNombre())
+                && isBlank(cmd.getApellido())
+                && isBlank(cmd.getPassword())
+                && cmd.getPerfilId() == null) {              // <<< usar ID, no String
+            throw new ValidationException("No hay cambios para aplicar.");
         }
-        // No se permiten cambios en el email
-        service.update(userId, cmd);
+        service.update(id, cmd);
     }
 
     // DELETE /api/users/delete/{user_id}
-    public void delete(Long userId) {
-        if (userId == null) throw new ValidationException("Id requerido");
-        service.delete(userId);
+    public void delete(Long id) {
+        if (id == null) throw new ValidationException("ID requerido.");
+        service.delete(id);
     }
 
-    // Helpers
-    private boolean isBlank(String s) { return s == null || s.trim().isEmpty(); }
-
-    private void validateEmailFormat(String email) {
-        String e = email.trim().toLowerCase();
-        String regex = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
-        if (!e.matches(regex)) {
-            throw new ValidationException("Email con formato inválido");
-        }
+    private boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
     }
 }

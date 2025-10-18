@@ -2,13 +2,12 @@ package ar.edu.up.bugtracker.service.cmd;
 
 /**
  * Body esperado para actualizar un usuario.
- * Todos los campos son opcionales; el Controller valida que al menos uno venga informado.
  */
 public class UserUpdateCmd {
-    private String nombre;    // opcional
-    private String apellido;  // opcional
-    private String password;  // opcional (si viene, se re-hashea)
-    private String perfil;    // opcional ("ADMIN" | "USUARIO")
+    private String nombre;
+    private String apellido;
+    private String password;
+    private Long perfilId;
 
     public UserUpdateCmd() {}
 
@@ -21,6 +20,6 @@ public class UserUpdateCmd {
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
 
-    public String getPerfil() { return perfil; }
-    public void setPerfil(String perfil) { this.perfil = perfil; }
+    public Long getPerfilId() { return perfilId; }
+    public void setPerfilId(Long perfilId) { this.perfilId = perfilId; }
 }

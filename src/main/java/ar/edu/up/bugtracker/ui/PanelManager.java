@@ -16,6 +16,7 @@ import java.awt.*;
 public class PanelManager extends JFrame {
 
     private final UserController userController;
+    private final UserRoleController roleController;
 
     // Estado de sesión
     private UserLoggedInDto currentUser;
@@ -30,13 +31,11 @@ public class PanelManager extends JFrame {
     private HomePanel homePanel;
     private MiPerfilPanel miPerfilPanel;
     private UsuariosListPanel usuariosListPanel;
-    private UserRoleController roleController;
 
     public PanelManager(UserController userController, UserRoleController roleController) {
         super("BugTracker");
         this.userController = userController;
         this.roleController = roleController;
-
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(900, 600));
@@ -61,7 +60,7 @@ public class PanelManager extends JFrame {
 
     public void showRegister() {
         if (headerPanel != null) remove(headerPanel);
-        registerPanel = new RegisterPanel(this, userController);
+        registerPanel = new RegisterPanel(this, userController, roleController);
         swapCenter(registerPanel);
     }
 
@@ -111,7 +110,7 @@ public class PanelManager extends JFrame {
             return;
         }
         Long currentId = (currentUser != null ? currentUser.getId() : null);
-        usuariosListPanel = new UsuariosListPanel(userController, currentId);
+        usuariosListPanel = new UsuariosListPanel(userController, currentId,roleController);
         swapCenter(usuariosListPanel);
     }
 

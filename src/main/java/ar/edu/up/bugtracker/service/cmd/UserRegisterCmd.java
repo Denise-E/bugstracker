@@ -1,15 +1,15 @@
 package ar.edu.up.bugtracker.service.cmd;
 
 /**
- * Body esperado para el registro un usuario.
- * Campos obligatorios: nombre, email, password, perfil ("ADMIN" | "USUARIO").
+ * Body esperado para el registro de un usuario.
+ * Campos obligatorios: nombre, apellido, email, password, perfilId.
  */
 public class UserRegisterCmd {
     private String nombre;
-    private String apellido; // opcional
+    private String apellido;
     private String email;
     private String password;
-    private String perfil;
+    private Long perfilId;
 
     public UserRegisterCmd() {}
 
@@ -25,6 +25,6 @@ public class UserRegisterCmd {
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
 
-    public String getPerfil() { return perfil; }
-    public void setPerfil(String perfil) { this.perfil = perfil; }
+    public Long getPerfilId() { return perfilId; }
+    public void setPerfilId(Long perfilId) { this.perfilId = perfilId; }
 }
