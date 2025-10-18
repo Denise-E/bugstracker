@@ -60,35 +60,47 @@ public class UserService {
             return id;
         } catch (RuntimeException ex) {
             rollbackSilently();
-            throw ex; // puede ser DaoException o AppException
+            throw new AppException("Error registrando al usuario: ", ex);
         }
     }
 
     public UserLoggedInDto login(UserLoginCmd cmd) {
-        String email = normEmail(cmd.getEmail());
-        Usuario u = usuarioDao.findByEmail(email);
-        if (u == null) throw new AuthException("Credenciales inválidas");
+        try {
+            String email = normEmail(cmd.getEmail());
+            Usuario u = usuarioDao.findByEmail(email);
+            if (u == null) throw new AuthException("Credenciales inválidas");
 
-        boolean ok = verifyPassword(
-                Objects.toString(u.getPasswordSalt(), ""),
-                cmd.getPassword(),
-                Objects.toString(u.getPasswordHash(), "")
-        );
-        if (!ok) throw new AuthException("Credenciales inválidas");
+            boolean ok = verifyPassword(
+                    Objects.toString(u.getPasswordSalt(), ""),
+                    cmd.getPassword(),
+                    Objects.toString(u.getPasswordHash(), "")
+            );
+            if (!ok) throw new AuthException("Credenciales inválidas");
 
-        return toLoggedInDto(u);
+            return toLoggedInDto(u);
+        }catch (RuntimeException ex) {
+            throw new AppException("Error logueando al usuario: ", ex);
+        }
     }
 
     public List<UserDetailDto> getAll() {
-        return usuarioDao.findAll().stream()
-                .map(this::toDetailDto)
-                .collect(Collectors.toList());
+        try {
+            return usuarioDao.findAll().stream()
+                    .map(this::toDetailDto)
+                    .collect(Collectors.toList());
+        }catch (RuntimeException ex) {
+            throw new AppException("Error obteniendo lista de usuarios ", ex);
+        }
     }
 
     public UserDetailDto getById(Long id) {
-        Usuario u = usuarioDao.findById(id);
-        if (u == null) throw new NotFoundException("Usuario no encontrado");
-        return toDetailDto(u);
+        try {
+            Usuario u = usuarioDao.findById(id);
+            if (u == null) throw new NotFoundException("Usuario no encontrado");
+            return toDetailDto(u);
+        }catch (RuntimeException ex) {
+            throw new AppException("Error obteniendo detalle del usuario: ", ex);
+        }
     }
 
     public void update(Long id, UserUpdateCmd cmd) {
@@ -117,7 +129,7 @@ public class UserService {
             commit();
         } catch (RuntimeException ex) {
             rollbackSilently();
-            throw ex;
+            throw new AppException("Error actualizando al usuario: ", ex);
         }
     }
 
@@ -131,7 +143,7 @@ public class UserService {
             commit();
         } catch (RuntimeException ex) {
             rollbackSilently();
-            throw ex;
+            throw new AppException("Error eliminando al usuario: ", ex);
         }
     }
 
