@@ -107,18 +107,17 @@ public class LoginPanel extends JPanel {
                 }
             }
             @Override protected void done() {
-                if (error != null) {
-                    String msg = (error instanceof ValidationException) ? error.getMessage()
-                            : (error instanceof AuthException) ? "Credenciales inválidas"
-                            : "Error inesperado";
-                    JOptionPane.showMessageDialog(LoginPanel.this, msg);
-                    return;
-                }
                 try {
-                    UserLoggedInDto user = get();
+                    var user = get(); // UserLoggedInDto
+                    if (user == null) {
+                        JOptionPane.showMessageDialog(LoginPanel.this, "Credenciales inválidas");
+                        return;
+                    }
                     manager.onLoginSuccess(user);
-                } catch (Exception e) {
-                    JOptionPane.showMessageDialog(LoginPanel.this, "Error inesperado");
+                } catch (Exception ex) {
+                    String msg = ex.getCause() != null ? ex.getCause().getMessage() : ex.getMessage();
+                    if (msg == null || msg.isBlank()) msg = "Credenciales inválidas";
+                    JOptionPane.showMessageDialog(LoginPanel.this, msg);
                 }
             }
         }.execute();

@@ -19,7 +19,7 @@ import java.util.List;
 public class UsuariosListPanel extends JPanel {
 
     private final UserController controller;
-    private final UserRoleController userController;
+    private final UserRoleController userController; // controlador de roles
     private final Long currentUserId;
 
     private final UsersTableModel tableModel = new UsersTableModel();
@@ -111,7 +111,7 @@ public class UsuariosListPanel extends JPanel {
                 case 0: return u.getNombre();
                 case 1: return u.getApellido();
                 case 2: return u.getEmail();
-                case 3: return u.getPerfil();
+                case 3: return u.getPerfil(); // nombre del rol a mostrar
                 case 4: return (u.getCreadoEn() != null ? u.getCreadoEn().format(fmt) : "");
                 case 5: return "ACCIONES";
                 default: return "";
@@ -189,11 +189,19 @@ public class UsuariosListPanel extends JPanel {
         UserDetailDto dto = tableModel.getAt(row);
         if (dto == null) return;
 
+        // Pasamos el usuario de la fila y el rol de la fila (por nombre).
+        // Si más adelante tu DTO trae perfilId, podés pasar ese Long en lugar del nombre.
+        Long rowUserId = dto.getId();
+        Long initialPerfilId = null;              // si lo tenés en DTO, reemplazar acá
+        String initialPerfilName = dto.getPerfil(); // nombre del rol mostrado en la tabla
+
         UpdateUsuarioDialog dlg = new UpdateUsuarioDialog(
                 SwingUtilities.getWindowAncestor(this),
                 controller,
                 userController,
-                currentUserId,
+                rowUserId,
+                initialPerfilId,
+                initialPerfilName,
                 this::refresh
         );
         dlg.setVisible(true);

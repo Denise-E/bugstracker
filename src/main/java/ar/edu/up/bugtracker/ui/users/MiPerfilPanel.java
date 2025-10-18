@@ -51,6 +51,8 @@ public class MiPerfilPanel extends JPanel {
         gbc.gridx=1; add(txtApellido, gbc);
 
         gbc.gridy++; gbc.gridx=0; add(new JLabel("Email:"), gbc);
+        txtEmail.setEditable(false);
+        txtEmail.setEnabled(false);
         gbc.gridx=1; add(txtEmail, gbc);
 
         gbc.gridy++; gbc.gridx=0; add(new JLabel("Rol:"), gbc);

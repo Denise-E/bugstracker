@@ -11,8 +11,12 @@ import javax.swing.*;
 import javax.swing.plaf.basic.BasicComboBoxRenderer;
 import java.awt.*;
 import java.util.List;
+import java.util.regex.Pattern;
+
 
 public class RegisterPanel extends JPanel {
+    private static final Pattern EMAIL_RX =
+            Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
 
     private final PanelManager manager;
     private final UserController controller;
@@ -181,6 +185,7 @@ public class RegisterPanel extends JPanel {
         String nombre = txtNombre.getText().trim();
         String apellido = txtApellido.getText().trim();
         String email = txtEmail.getText().trim();
+
         String pass = new String(txtPassword.getPassword());
         PerfilUsuario seleccionado = (PerfilUsuario) cbPerfil.getSelectedItem();
 
@@ -189,6 +194,12 @@ public class RegisterPanel extends JPanel {
             JOptionPane.showMessageDialog(this, "Completá los campos obligatorios (*).");
             return;
         }
+
+        if (!EMAIL_RX.matcher(email).matches()) {
+            JOptionPane.showMessageDialog(this, "Mail invalido");
+            return;
+        }
+
         if (pass.length() < 6) {
             JOptionPane.showMessageDialog(this, "La contraseña debe tener al menos 6 caracteres.");
             return;
