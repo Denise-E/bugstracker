@@ -25,6 +25,10 @@ public class Usuario {
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
+    /**
+    Valor aleatorio único que se concatena con la contraseña antes de hashearla.
+     Evita que dos usuarios con la misma contraseña tengan el mismo hash.
+    **/
     @Column(name = "password_salt", length = 255)
     private String passwordSalt;
 

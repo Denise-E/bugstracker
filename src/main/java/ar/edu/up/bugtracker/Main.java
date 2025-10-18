@@ -1,7 +1,10 @@
 package ar.edu.up.bugtracker;
 
 import ar.edu.up.bugtracker.controller.UserController;
+import ar.edu.up.bugtracker.controller.UserRoleController; // usás este nombre: OK
+import ar.edu.up.bugtracker.dao.PerfilUsuarioDao;
 import ar.edu.up.bugtracker.dao.UserDao;
+import ar.edu.up.bugtracker.service.PerfilUsuarioService;
 import ar.edu.up.bugtracker.service.UserService;
 import ar.edu.up.bugtracker.ui.PanelManager;
 import jakarta.persistence.EntityManager;
@@ -18,34 +21,55 @@ import java.util.Properties;
 public class Main {
 
     public static void main(String[] args) throws IOException {
-        // Asegurar zona horaria coherente con la DB
+        // Zona horaria coherente con la DB
         System.setProperty("user.timezone", "UTC");
 
-        Properties p = new Properties();
+        // (Opcional) Etiquetas de diálogos en español
+        UIManager.put("OptionPane.yesButtonText", "Sí");
+        UIManager.put("OptionPane.noButtonText", "No");
+        UIManager.put("OptionPane.okButtonText", "Aceptar");
+        UIManager.put("OptionPane.cancelButtonText", "Cancelar");
 
-        try (var in = Files.newInputStream(Paths.get("config/local.properties"))) { p.load(in); }
+        // Cargar credenciales desde config/local.properties
+        Properties p = new Properties();
+        try (var in = Files.newInputStream(Paths.get("config/local.properties"))) {
+            p.load(in);
+        }
+
+        String url  = p.getProperty("db.url");
+        String user = p.getProperty("db.user");
+        String pass = p.getProperty("db.pass");
+        if (url == null || user == null || pass == null) {
+            throw new IllegalStateException("Faltan db.url/db.user/db.pass en config/local.properties");
+        }
+
         Map<String,Object> props = Map.of(
-                "jakarta.persistence.jdbc.url",  p.getProperty("db.url"),
-                "jakarta.persistence.jdbc.user", p.getProperty("db.user"),
-                "jakarta.persistence.jdbc.password", p.getProperty("db.pass")
+                "jakarta.persistence.jdbc.url",  url,
+                "jakarta.persistence.jdbc.user", user,
+                "jakarta.persistence.jdbc.password", pass
+                // (opcional) "hibernate.dialect", "org.hibernate.dialect.MySQLDialect"
         );
 
-        // Boot de JPA/Hibernate
+        // Boot de JPA/Hibernate con overrides
         EntityManagerFactory emf = Persistence.createEntityManagerFactory("bugtrackerPU", props);
         EntityManager em = emf.createEntityManager();
 
-        // Inicialización de capas
+        // Inicialización clases
         UserDao usuarioDao = new UserDao(em);
         UserService usuarioService = new UserService(usuarioDao, em);
         UserController usuarioController = new UserController(usuarioService);
 
-        // Levantar la UI en Event Dispatch Thread
+        PerfilUsuarioDao perfilDao = new PerfilUsuarioDao(em);
+        PerfilUsuarioService perfilService = new PerfilUsuarioService(perfilDao);
+        UserRoleController roleController = new UserRoleController(perfilService);
+
+        // Levantar UI
         SwingUtilities.invokeLater(() -> {
-            PanelManager app = new PanelManager(usuarioController);
+            PanelManager app = new PanelManager(usuarioController, roleController);
             app.setVisible(true);
         });
 
-        // Hook para cerrar EM/EMF cuando el proceso termina
+        // Cierre ordenado
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try { if (em.isOpen()) em.close(); } catch (Exception ignored) {}
             try { if (emf.isOpen()) emf.close(); } catch (Exception ignored) {}

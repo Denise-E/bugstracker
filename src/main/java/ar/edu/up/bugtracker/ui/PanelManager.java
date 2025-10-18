@@ -1,6 +1,7 @@
 package ar.edu.up.bugtracker.ui;
 
 import ar.edu.up.bugtracker.controller.UserController;
+import ar.edu.up.bugtracker.controller.UserRoleController;
 import ar.edu.up.bugtracker.service.dto.UserLoggedInDto;
 import ar.edu.up.bugtracker.ui.users.auth.LoginPanel;
 import ar.edu.up.bugtracker.ui.users.auth.RegisterPanel;
@@ -29,10 +30,13 @@ public class PanelManager extends JFrame {
     private HomePanel homePanel;
     private MiPerfilPanel miPerfilPanel;
     private UsuariosListPanel usuariosListPanel;
+    private UserRoleController roleController;
 
-    public PanelManager(UserController userController) {
+    public PanelManager(UserController userController, UserRoleController roleController) {
         super("BugTracker");
         this.userController = userController;
+        this.roleController = roleController;
+
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(900, 600));
