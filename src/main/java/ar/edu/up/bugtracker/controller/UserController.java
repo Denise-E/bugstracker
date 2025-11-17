@@ -18,7 +18,6 @@ public class UserController {
         this.service = service;
     }
 
-    // POST /api/users/register
     public Long register(UserRegisterCmd cmd) {
         // Validación mínima a nivel controller (sin lógica de negocio)
         if (cmd == null) throw new ValidationException("Body requerido.");
@@ -32,7 +31,6 @@ public class UserController {
         return service.register(cmd);
     }
 
-    // POST /api/users/login
     public UserLoggedInDto login(UserLoginCmd cmd) {
         if (cmd == null) throw new ValidationException("Body requerido.");
         if (isBlank(cmd.getEmail()) || isBlank(cmd.getPassword())) {
@@ -41,18 +39,15 @@ public class UserController {
         return service.login(cmd);
     }
 
-    // GET /api/users/detail/all
     public List<UserDetailDto> getAll() {
         return service.getAll();
     }
 
-    // GET /api/users/detail/{user_id}
     public UserDetailDto getById(Long id) {
         if (id == null) throw new ValidationException("ID requerido.");
         return service.getById(id);
     }
 
-    // UPDATE /api/users/update/{user_id}
     public void update(Long id, UserUpdateCmd cmd) {
         if (id == null) throw new ValidationException("ID requerido.");
         if (cmd == null) throw new ValidationException("Body requerido.");
@@ -67,7 +62,6 @@ public class UserController {
         service.update(id, cmd);
     }
 
-    // DELETE /api/users/delete/{user_id}
     public void delete(Long id) {
         if (id == null) throw new ValidationException("ID requerido.");
         service.delete(id);

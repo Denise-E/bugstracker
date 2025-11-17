@@ -13,12 +13,10 @@ public class Comentario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Incidencia a la que pertenece el comentario (timeline general)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "incidencia_id", nullable = false)
     private Incidencia incidencia;
 
-    // Autor del comentario
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "created_by", nullable = false)
     private Usuario createdBy;

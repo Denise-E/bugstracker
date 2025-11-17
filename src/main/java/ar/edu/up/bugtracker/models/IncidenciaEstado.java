@@ -10,7 +10,7 @@ public class IncidenciaEstado {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // NUEVA, EN_PROCESO, BLOQUEADA, EN_REVISION, TERMINADA (UNIQUE en DB)
+    // NUEVA, EN_PROCESO, BLOQUEADA, EN_REVISION, TERMINADA 
     @Column(name = "nombre", nullable = false, length = 50, unique = true)
     private String nombre;
 

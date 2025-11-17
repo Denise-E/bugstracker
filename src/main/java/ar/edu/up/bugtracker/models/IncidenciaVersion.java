@@ -15,22 +15,18 @@ public class IncidenciaVersion {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // A qué incidencia pertenece
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "incidencia_id", nullable = false)
     private Incidencia incidencia;
 
-    // Quién creó la versión (cambio)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "created_by", nullable = false)
     private Usuario createdBy;
 
-    // Estado al que pasó en esta versión
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "estado_id", nullable = false)
     private IncidenciaEstado estado;
 
-    // Metadatos en JSON (MySQL JSON). Mapeado como String con tipo JSON de Hibernate.
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "detalles", columnDefinition = "json")
     private String detalles;

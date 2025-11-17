@@ -14,12 +14,10 @@ public class Incidencia {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Proyecto al que pertenece
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "proyecto_id", nullable = false)
     private Proyecto proyecto;
 
-    // Responsable asignado (puede ser null)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "responsable_id")
     private Usuario responsable;
@@ -28,11 +26,9 @@ public class Incidencia {
     @Column(name = "descripcion", nullable = false)
     private String descripcion;
 
-    // Horas estimadas (nullable según tu script)
     @Column(name = "estimacion_horas", precision = 10, scale = 2)
     private BigDecimal estimacionHoras;
 
-    // Puntero a la versión actual (nullable hasta crear la primera versión)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "current_version_id")
     private IncidenciaVersion currentVersion;

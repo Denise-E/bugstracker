@@ -24,7 +24,6 @@ public class Main {
         // Zona horaria coherente con la DB
         System.setProperty("user.timezone", "UTC");
 
-        // (Opcional) Etiquetas de diálogos en español
         UIManager.put("OptionPane.yesButtonText", "Sí");
         UIManager.put("OptionPane.noButtonText", "No");
         UIManager.put("OptionPane.okButtonText", "Aceptar");
@@ -47,7 +46,6 @@ public class Main {
                 "jakarta.persistence.jdbc.url",  url,
                 "jakarta.persistence.jdbc.user", user,
                 "jakarta.persistence.jdbc.password", pass
-                // (opcional) "hibernate.dialect", "org.hibernate.dialect.MySQLDialect"
         );
 
         // Boot de JPA/Hibernate con overrides
@@ -69,7 +67,7 @@ public class Main {
             app.setVisible(true);
         });
 
-        // Cierre ordenado
+        // Cierre
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try { if (em.isOpen()) em.close(); } catch (Exception ignored) {}
             try { if (emf.isOpen()) emf.close(); } catch (Exception ignored) {}

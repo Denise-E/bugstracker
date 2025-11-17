@@ -10,7 +10,7 @@ public class PerfilUsuario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // ADMIN, USUARIO (con UNIQUE en DB)
+    // ADMIN, USUARIO 
     @Column(name = "nombre", nullable = false, length = 50, unique = true)
     private String nombre;
 

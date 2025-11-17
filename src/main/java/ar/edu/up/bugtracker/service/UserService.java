@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserDao usuarioDao;
-    private final EntityManager em; // Para control transaccional
+    private final EntityManager em; 
     private static final int SALT_BYTES = 24;
 
     public UserService(UserDao usuarioDao, EntityManager em) {
