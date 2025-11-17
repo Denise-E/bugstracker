@@ -1,10 +1,13 @@
 package ar.edu.up.bugtracker;
 
+import ar.edu.up.bugtracker.controller.ProyectoController;
 import ar.edu.up.bugtracker.controller.UserController;
 import ar.edu.up.bugtracker.controller.UserRoleController; // usás este nombre: OK
 import ar.edu.up.bugtracker.dao.PerfilUsuarioDao;
+import ar.edu.up.bugtracker.dao.ProyectoDao;
 import ar.edu.up.bugtracker.dao.UserDao;
 import ar.edu.up.bugtracker.service.PerfilUsuarioService;
+import ar.edu.up.bugtracker.service.ProyectoService;
 import ar.edu.up.bugtracker.service.UserService;
 import ar.edu.up.bugtracker.ui.PanelManager;
 import jakarta.persistence.EntityManager;
@@ -61,9 +64,13 @@ public class Main {
         PerfilUsuarioService perfilService = new PerfilUsuarioService(perfilDao);
         UserRoleController roleController = new UserRoleController(perfilService);
 
+        ProyectoDao proyectoDao = new ProyectoDao(em);
+        ProyectoService proyectoService = new ProyectoService(proyectoDao, em);
+        ProyectoController proyectoController = new ProyectoController(proyectoService);
+
         // Levantar UI
         SwingUtilities.invokeLater(() -> {
-            PanelManager app = new PanelManager(usuarioController, roleController);
+            PanelManager app = new PanelManager(usuarioController, roleController, proyectoController);
             app.setVisible(true);
         });
 

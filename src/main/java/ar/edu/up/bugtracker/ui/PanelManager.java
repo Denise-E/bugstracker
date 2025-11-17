@@ -1,5 +1,6 @@
 package ar.edu.up.bugtracker.ui;
 
+import ar.edu.up.bugtracker.controller.ProyectoController;
 import ar.edu.up.bugtracker.controller.UserController;
 import ar.edu.up.bugtracker.controller.UserRoleController;
 import ar.edu.up.bugtracker.service.dto.UserLoggedInDto;
@@ -17,6 +18,7 @@ public class PanelManager extends JFrame {
 
     private final UserController userController;
     private final UserRoleController roleController;
+    private final ProyectoController proyectoController;
 
     // Estado de sesión
     private UserLoggedInDto currentUser;
@@ -32,10 +34,11 @@ public class PanelManager extends JFrame {
     private MiPerfilPanel miPerfilPanel;
     private UsuariosListPanel usuariosListPanel;
 
-    public PanelManager(UserController userController, UserRoleController roleController) {
+    public PanelManager(UserController userController, UserRoleController roleController, ProyectoController proyectoController) {
         super("BugTracker");
         this.userController = userController;
         this.roleController = roleController;
+        this.proyectoController = proyectoController;
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(900, 600));
@@ -90,7 +93,7 @@ public class PanelManager extends JFrame {
     }
 
     public void showHome() {
-        homePanel = new HomePanel();
+        homePanel = new HomePanel(proyectoController, currentUser);
         swapCenter(homePanel);
     }
 
