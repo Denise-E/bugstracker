@@ -16,20 +16,27 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.EventObject;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class ProyectosListPanel extends JPanel {
 
     private final ProyectoController controller;
     private final UserLoggedInDto currentUser;
     private final boolean isAdmin;
+    private Consumer<Long> onViewProyecto;
 
     private final ProyectosTableModel tableModel = new ProyectosTableModel();
     private final JTable table = new JTable(tableModel);
 
     public ProyectosListPanel(ProyectoController controller, UserLoggedInDto currentUser) {
+        this(controller, currentUser, null);
+    }
+
+    public ProyectosListPanel(ProyectoController controller, UserLoggedInDto currentUser, Consumer<Long> onViewProyecto) {
         this.controller = controller;
         this.currentUser = currentUser;
         this.isAdmin = currentUser != null && "ADMIN".equalsIgnoreCase(currentUser.getPerfil());
+        this.onViewProyecto = onViewProyecto;
         buildUI();
         refresh();
     }
@@ -177,11 +184,13 @@ public class ProyectosListPanel extends JPanel {
 
     private class ActionsRenderer extends JPanel implements TableCellRenderer {
         private final JButton btnEdit = new JButton("Editar");
+        private final JButton btnView = new JButton("Ver");
         private final JButton btnDelete = new JButton("Eliminar");
 
         public ActionsRenderer() {
             setLayout(new FlowLayout(FlowLayout.RIGHT, 6, 2));
             add(btnEdit);
+            add(btnView);
             if (isAdmin) {
                 add(btnDelete);
             }
@@ -199,11 +208,13 @@ public class ProyectosListPanel extends JPanel {
     private class ActionsEditor extends AbstractCellEditor implements TableCellEditor {
         private final JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 2));
         private final JButton btnEdit = new JButton("Editar");
+        private final JButton btnView = new JButton("Ver");
         private final JButton btnDelete = new JButton("Eliminar");
         private int editingRow = -1;
 
         public ActionsEditor() {
             panel.add(btnEdit);
+            panel.add(btnView);
             if (isAdmin) {
                 panel.add(btnDelete);
             }
@@ -212,6 +223,12 @@ public class ProyectosListPanel extends JPanel {
                 int row = editingRow;
                 stopCellEditing();
                 onEditRow(row);
+            });
+
+            btnView.addActionListener(e -> {
+                int row = editingRow;
+                stopCellEditing();
+                onViewRow(row);
             });
 
             btnDelete.addActionListener(e -> {
@@ -254,13 +271,23 @@ public class ProyectosListPanel extends JPanel {
         dlg.setVisible(true);
     }
 
+    private void onViewRow(int row) {
+        Proyecto proyecto = tableModel.getAt(row);
+        if (proyecto == null) return;
+        
+        if (onViewProyecto != null) {
+            onViewProyecto.accept(proyecto.getId());
+        }
+    }
+
     private void onDeleteRow(int row) {
         Proyecto proyecto = tableModel.getAt(row);
         if (proyecto == null) return;
 
         int opt = JOptionPane.showOptionDialog(
                 this,
-                "¿Estás seguro que deseas eliminar el proyecto \"" + proyecto.getNombre() + "\"? Esta acción no puede deshacerse.",
+                "¿Estás seguro que deseas eliminar el proyecto \"" + proyecto.getNombre() + "\"?\n" +
+                        "Se eliminarán todas las incidencias asociadas. Esta acción no puede deshacerse.",
                 "Confirmar eliminación",
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.WARNING_MESSAGE,

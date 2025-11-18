@@ -1,11 +1,18 @@
 package ar.edu.up.bugtracker;
 
+import ar.edu.up.bugtracker.controller.ComentarioController;
+import ar.edu.up.bugtracker.controller.IncidenciaController;
 import ar.edu.up.bugtracker.controller.ProyectoController;
 import ar.edu.up.bugtracker.controller.UserController;
 import ar.edu.up.bugtracker.controller.UserRoleController; // usás este nombre: OK
+import ar.edu.up.bugtracker.dao.ComentarioDao;
+import ar.edu.up.bugtracker.dao.IncidenciaDao;
+import ar.edu.up.bugtracker.dao.IncidenciaVersionDao;
 import ar.edu.up.bugtracker.dao.PerfilUsuarioDao;
 import ar.edu.up.bugtracker.dao.ProyectoDao;
 import ar.edu.up.bugtracker.dao.UserDao;
+import ar.edu.up.bugtracker.service.ComentarioService;
+import ar.edu.up.bugtracker.service.IncidenciaService;
 import ar.edu.up.bugtracker.service.PerfilUsuarioService;
 import ar.edu.up.bugtracker.service.ProyectoService;
 import ar.edu.up.bugtracker.service.UserService;
@@ -68,9 +75,19 @@ public class Main {
         ProyectoService proyectoService = new ProyectoService(proyectoDao, em);
         ProyectoController proyectoController = new ProyectoController(proyectoService);
 
+        IncidenciaDao incidenciaDao = new IncidenciaDao(em);
+        IncidenciaVersionDao incidenciaVersionDao = new IncidenciaVersionDao(em);
+        IncidenciaService incidenciaService = new IncidenciaService(incidenciaDao, incidenciaVersionDao, em);
+        IncidenciaController incidenciaController = new IncidenciaController(incidenciaService);
+
+        ComentarioDao comentarioDao = new ComentarioDao(em);
+        ComentarioService comentarioService = new ComentarioService(comentarioDao, em);
+        ComentarioController comentarioController = new ComentarioController(comentarioService);
+
         // Levantar UI
         SwingUtilities.invokeLater(() -> {
-            PanelManager app = new PanelManager(usuarioController, roleController, proyectoController);
+            PanelManager app = new PanelManager(usuarioController, roleController, proyectoController,
+                    incidenciaController, comentarioController);
             app.setVisible(true);
         });
 

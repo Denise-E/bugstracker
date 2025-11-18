@@ -5,12 +5,16 @@ import ar.edu.up.bugtracker.service.dto.UserLoggedInDto;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.function.Consumer;
 
 public class HomePanel extends JPanel {
 
-    public HomePanel(ProyectoController proyectoController, UserLoggedInDto currentUser) {
+    private ProyectosListPanel proyectosListPanel;
+    private ProyectoDetailPanel proyectoDetailPanel;
+
+    public HomePanel(ProyectoController proyectoController, UserLoggedInDto currentUser, Consumer<Long> onViewProyecto) {
         setLayout(new BorderLayout());
-        ProyectosListPanel proyectosPanel = new ProyectosListPanel(proyectoController, currentUser);
-        add(proyectosPanel, BorderLayout.CENTER);
+        proyectosListPanel = new ProyectosListPanel(proyectoController, currentUser, onViewProyecto);
+        add(proyectosListPanel, BorderLayout.CENTER);
     }
 }
