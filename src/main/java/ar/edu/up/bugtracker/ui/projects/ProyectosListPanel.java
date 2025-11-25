@@ -71,6 +71,11 @@ public class ProyectosListPanel extends JPanel {
         table.getColumnModel().getColumn(actionsCol).setCellRenderer(new ActionsRenderer());
         table.getColumnModel().getColumn(actionsCol).setCellEditor(new ActionsEditor());
         table.getColumnModel().getColumn(actionsCol).setPreferredWidth(160);
+        
+        int fechaCol = 2; 
+        table.getColumnModel().getColumn(fechaCol).setPreferredWidth(140);
+        table.getColumnModel().getColumn(fechaCol).setMinWidth(120);
+        table.getColumnModel().getColumn(fechaCol).setMaxWidth(160);
     }
 
     private void onCreateClick() {
@@ -117,7 +122,7 @@ public class ProyectosListPanel extends JPanel {
 
     // Tabla
     private static class ProyectosTableModel extends AbstractTableModel {
-        private final String[] cols = {"ID", "Nombre", "Descripción", "Creado", "Acciones"};
+        private final String[] cols = {"Nombre", "Descripción", "Creado", "Acciones"};
         private final DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
         private List<Proyecto> data = new ArrayList<>();
 
@@ -152,18 +157,16 @@ public class ProyectosListPanel extends JPanel {
             if (p == null) return "";
             switch (col) {
                 case 0:
-                    return p.getId();
-                case 1:
                     return p.getNombre();
-                case 2:
+                case 1:
                     String desc = p.getDescripcion();
                     if (desc != null && desc.length() > 50) {
                         return desc.substring(0, 47) + "...";
                     }
                     return desc != null ? desc : "";
-                case 3:
+                case 2:
                     return (p.getCreadoEn() != null ? p.getCreadoEn().format(fmt) : "");
-                case 4:
+                case 3:
                     return "ACCIONES";
                 default:
                     return "";
@@ -177,7 +180,6 @@ public class ProyectosListPanel extends JPanel {
 
         @Override
         public Class<?> getColumnClass(int columnIndex) {
-            if (columnIndex == 0) return Long.class;
             return String.class;
         }
     }

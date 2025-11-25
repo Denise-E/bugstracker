@@ -19,7 +19,7 @@ public class ProyectoDialog extends JDialog {
 
     private final JTextField txtNombre = new JTextField(30);
     private final JTextArea txtDescripcion = new JTextArea(5, 30);
-    private final JButton btnOk;
+    private JButton btnOk;
 
     public ProyectoDialog(Window owner,
                           ProyectoController controller,

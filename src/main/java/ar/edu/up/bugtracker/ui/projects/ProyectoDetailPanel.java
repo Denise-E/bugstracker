@@ -33,6 +33,8 @@ public class ProyectoDetailPanel extends JPanel {
     private final IncidenciasTableModel tableModel = new IncidenciasTableModel();
     private final JTable table = new JTable(tableModel);
     private Proyecto proyecto;
+    private JLabel lblNombre;
+    private JLabel lblDescripcion;
 
     public ProyectoDetailPanel(ProyectoController proyectoController,
                                IncidenciaController incidenciaController,
@@ -66,17 +68,41 @@ public class ProyectoDetailPanel extends JPanel {
             }
         });
         topPanel.add(btnVolver, BorderLayout.WEST);
-
-        JLabel title = new JLabel("Cargando proyecto...");
-        title.setFont(title.getFont().deriveFont(Font.BOLD, 18f));
-        topPanel.add(title, BorderLayout.CENTER);
-
         add(topPanel, BorderLayout.NORTH);
+
+        JPanel centerPanel = new JPanel(new BorderLayout());
+        
+        JPanel proyectoInfoPanel = new JPanel(new BorderLayout());
+        proyectoInfoPanel.setBorder(new EmptyBorder(10, 0, 15, 0));
+        
+        JPanel nombreDescPanel = new JPanel(new BorderLayout());
+        nombreDescPanel.setBorder(new EmptyBorder(0, 0, 10, 0));
+        
+        lblNombre = new JLabel("Cargando proyecto...");
+        lblNombre.setFont(lblNombre.getFont().deriveFont(Font.BOLD, 18f));
+        lblNombre.setVerticalAlignment(SwingConstants.CENTER);
+        nombreDescPanel.add(lblNombre, BorderLayout.NORTH);
+        
+        lblDescripcion = new JLabel("");
+        lblDescripcion.setFont(lblDescripcion.getFont().deriveFont(14f));
+        lblDescripcion.setVerticalAlignment(SwingConstants.TOP);
+        nombreDescPanel.add(lblDescripcion, BorderLayout.CENTER);
+        
+        proyectoInfoPanel.add(nombreDescPanel, BorderLayout.CENTER);
+        
+        // Botón crear tarea
+        JButton btnCrearTarea = new JButton("+ Tarea");
+        btnCrearTarea.addActionListener(e -> onCreateTareaClick());
+        proyectoInfoPanel.add(btnCrearTarea, BorderLayout.EAST);
+        
+        centerPanel.add(proyectoInfoPanel, BorderLayout.NORTH);
 
         // Tabla de incidencias
         JScrollPane scroll = new JScrollPane(table);
         scroll.setBorder(new EmptyBorder(10, 0, 10, 0));
-        add(scroll, BorderLayout.CENTER);
+        centerPanel.add(scroll, BorderLayout.CENTER);
+
+        add(centerPanel, BorderLayout.CENTER);
 
         table.setRowHeight(28);
         table.setFillsViewportHeight(true);
@@ -124,16 +150,28 @@ public class ProyectoDetailPanel extends JPanel {
     }
 
     private void updateTitle() {
-        JPanel topPanel = (JPanel) ((BorderLayout) getLayout()).getLayoutComponent(BorderLayout.NORTH);
-        if (topPanel != null) {
-            Component[] components = topPanel.getComponents();
-            for (Component comp : components) {
-                if (comp instanceof JLabel && comp.getFont().getStyle() == Font.BOLD) {
-                    ((JLabel) comp).setText("Proyecto: " + proyecto.getNombre());
-                    break;
-                }
+        if (proyecto != null) {
+            lblNombre.setText(proyecto.getNombre() != null ? proyecto.getNombre() : "");
+            String desc = proyecto.getDescripcion();
+            if (desc != null && !desc.trim().isEmpty()) {
+                lblDescripcion.setText(desc);
+            } else {
+                lblDescripcion.setText("");
             }
         }
+    }
+    
+    private void onCreateTareaClick() {
+        if (proyecto == null) return;
+        
+        IncidenciaDialog dlg = new IncidenciaDialog(
+                SwingUtilities.getWindowAncestor(this),
+                incidenciaController,
+                currentUser,
+                proyectoId,
+                this::loadIncidencias
+        );
+        dlg.setVisible(true);
     }
 
     private void loadIncidencias() {

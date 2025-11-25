@@ -1,0 +1,138 @@
+package ar.edu.up.bugtracker.ui.projects;
+
+import ar.edu.up.bugtracker.controller.IncidenciaController;
+import ar.edu.up.bugtracker.exceptions.ForbiddenException;
+import ar.edu.up.bugtracker.exceptions.NotFoundException;
+import ar.edu.up.bugtracker.exceptions.ValidationException;
+import ar.edu.up.bugtracker.models.Incidencia;
+import ar.edu.up.bugtracker.models.Proyecto;
+import ar.edu.up.bugtracker.service.dto.UserLoggedInDto;
+
+import javax.swing.*;
+import java.awt.*;
+
+public class IncidenciaDialog extends JDialog {
+
+    private final IncidenciaController controller;
+    private final UserLoggedInDto currentUser;
+    private final Long proyectoId;
+    private final Runnable onSaved;
+
+    private final JTextArea txtDescripcion = new JTextArea(5, 30);
+    private JButton btnOk;
+
+    public IncidenciaDialog(Window owner,
+                          IncidenciaController controller,
+                          UserLoggedInDto currentUser,
+                          Long proyectoId,
+                          Runnable onSaved) {
+        super(owner, "Crear tarea", ModalityType.APPLICATION_MODAL);
+        this.controller = controller;
+        this.currentUser = currentUser;
+        this.proyectoId = proyectoId;
+        this.onSaved = onSaved;
+
+        buildUI();
+        pack();
+        setLocationRelativeTo(owner);
+    }
+
+    private void buildUI() {
+        setLayout(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(6, 6, 6, 6);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.anchor = GridBagConstraints.NORTHEAST;
+        add(new JLabel("Descripción:"), gbc);
+
+        txtDescripcion.setLineWrap(true);
+        txtDescripcion.setWrapStyleWord(true);
+        JScrollPane scrollDesc = new JScrollPane(txtDescripcion);
+        scrollDesc.setPreferredSize(new Dimension(300, 100));
+        gbc.gridx = 1;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.weighty = 1.0;
+        gbc.weightx = 1.0;
+        add(scrollDesc, gbc);
+
+        JButton btnCancel = new JButton("Cancelar");
+        btnOk = new JButton("Crear");
+
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.weightx = 0;
+        gbc.weighty = 0;
+        gbc.anchor = GridBagConstraints.WEST;
+        add(btnCancel, gbc);
+
+        gbc.gridx = 1;
+        gbc.anchor = GridBagConstraints.EAST;
+        add(btnOk, gbc);
+
+        btnOk.addActionListener(e -> doSave());
+        btnCancel.addActionListener(e -> dispose());
+    }
+
+    private void doSave() {
+        String descripcion = txtDescripcion.getText() != null ? txtDescripcion.getText().trim() : "";
+
+        if (descripcion.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "La descripción de la tarea es obligatoria.");
+            txtDescripcion.requestFocus();
+            return;
+        }
+
+        Incidencia incidencia = new Incidencia();
+        incidencia.setDescripcion(descripcion);
+        
+        // Asignar el proyecto
+        Proyecto proyecto = new Proyecto();
+        proyecto.setId(proyectoId);
+        incidencia.setProyecto(proyecto);
+
+        btnOk.setEnabled(false);
+
+        new SwingWorker<Void, Void>() {
+            private Exception error;
+
+            @Override
+            protected Void doInBackground() {
+                try {
+                    controller.create(incidencia, currentUser);
+                    return null;
+                } catch (Exception ex) {
+                    this.error = ex;
+                    return null;
+                }
+            }
+
+            @Override
+            protected void done() {
+                btnOk.setEnabled(true);
+                if (error != null) {
+                    String msg;
+                    if (error instanceof ForbiddenException) {
+                        msg = "No tenés permisos para realizar esta acción.";
+                    } else if (error instanceof ValidationException) {
+                        msg = error.getMessage();
+                    } else if (error instanceof NotFoundException) {
+                        msg = "Proyecto no encontrado.";
+                    } else {
+                        msg = "Error guardando tarea: " + error.getMessage();
+                    }
+                    JOptionPane.showMessageDialog(IncidenciaDialog.this, msg);
+                    return;
+                }
+                JOptionPane.showMessageDialog(IncidenciaDialog.this, "Tarea creada exitosamente.");
+                if (onSaved != null) onSaved.run();
+                dispose();
+            }
+        }.execute();
+    }
+}
+
