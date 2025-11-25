@@ -90,10 +90,9 @@ public class ProyectoDetailPanel extends JPanel {
         
         proyectoInfoPanel.add(nombreDescPanel, BorderLayout.CENTER);
         
-        // Botón crear tarea
-        JButton btnCrearTarea = new JButton("+ Tarea");
-        btnCrearTarea.addActionListener(e -> onCreateTareaClick());
-        proyectoInfoPanel.add(btnCrearTarea, BorderLayout.EAST);
+        JButton btnCrearIncidencia = new JButton("+ Incidencia");
+        btnCrearIncidencia.addActionListener(e -> onCreateIncidenciaClick());
+        proyectoInfoPanel.add(btnCrearIncidencia, BorderLayout.EAST);
         
         centerPanel.add(proyectoInfoPanel, BorderLayout.NORTH);
 
@@ -161,7 +160,7 @@ public class ProyectoDetailPanel extends JPanel {
         }
     }
     
-    private void onCreateTareaClick() {
+    private void onCreateIncidenciaClick() {
         if (proyecto == null) return;
         
         IncidenciaDialog dlg = new IncidenciaDialog(

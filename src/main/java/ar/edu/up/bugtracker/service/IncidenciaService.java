@@ -7,6 +7,7 @@ import ar.edu.up.bugtracker.models.Incidencia;
 import ar.edu.up.bugtracker.models.IncidenciaEstado;
 import ar.edu.up.bugtracker.models.IncidenciaEstadoEnum;
 import ar.edu.up.bugtracker.models.IncidenciaVersion;
+import ar.edu.up.bugtracker.models.Proyecto;
 import ar.edu.up.bugtracker.models.Usuario;
 import ar.edu.up.bugtracker.service.dto.UserLoggedInDto;
 import jakarta.persistence.EntityManager;
@@ -51,6 +52,11 @@ public class IncidenciaService {
 
         try {
             begin();
+
+            if (incidencia.getProyecto() != null && incidencia.getProyecto().getId() != null) {
+                Proyecto proyectoGestionado = em.getReference(Proyecto.class, incidencia.getProyecto().getId());
+                incidencia.setProyecto(proyectoGestionado);
+            }
 
             Long incidenciaId = incidenciaDao.create(incidencia);
 

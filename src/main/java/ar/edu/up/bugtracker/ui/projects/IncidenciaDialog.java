@@ -26,7 +26,7 @@ public class IncidenciaDialog extends JDialog {
                           UserLoggedInDto currentUser,
                           Long proyectoId,
                           Runnable onSaved) {
-        super(owner, "Crear tarea", ModalityType.APPLICATION_MODAL);
+        super(owner, "Crear incidencia", ModalityType.APPLICATION_MODAL);
         this.controller = controller;
         this.currentUser = currentUser;
         this.proyectoId = proyectoId;
@@ -82,7 +82,7 @@ public class IncidenciaDialog extends JDialog {
         String descripcion = txtDescripcion.getText() != null ? txtDescripcion.getText().trim() : "";
 
         if (descripcion.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "La descripción de la tarea es obligatoria.");
+            JOptionPane.showMessageDialog(this, "La descripción de la incidencia es obligatoria.");
             txtDescripcion.requestFocus();
             return;
         }
@@ -123,12 +123,13 @@ public class IncidenciaDialog extends JDialog {
                     } else if (error instanceof NotFoundException) {
                         msg = "Proyecto no encontrado.";
                     } else {
-                        msg = "Error guardando tarea: " + error.getMessage();
+                        String errorMsg = error.getMessage();
+                        msg = "Error guardando incidencia: " + errorMsg;
                     }
                     JOptionPane.showMessageDialog(IncidenciaDialog.this, msg);
                     return;
                 }
-                JOptionPane.showMessageDialog(IncidenciaDialog.this, "Tarea creada exitosamente.");
+                JOptionPane.showMessageDialog(IncidenciaDialog.this, "Incidencia creada exitosamente.");
                 if (onSaved != null) onSaved.run();
                 dispose();
             }
