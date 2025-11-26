@@ -1,5 +1,6 @@
 # Personal files
 config/local.properties
+pendings.txt
 
 target/
 !.mvn/wrapper/maven-wrapper.jar

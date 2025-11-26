@@ -78,12 +78,12 @@ public class ProyectoDetailPanel extends JPanel {
         JPanel nombreDescPanel = new JPanel(new BorderLayout());
         nombreDescPanel.setBorder(new EmptyBorder(0, 0, 10, 0));
         
-        lblNombre = new JLabel("Cargando proyecto...");
+        lblNombre = new JLabel("<html>Cargando proyecto...</html>");
         lblNombre.setFont(lblNombre.getFont().deriveFont(Font.BOLD, 18f));
         lblNombre.setVerticalAlignment(SwingConstants.CENTER);
         nombreDescPanel.add(lblNombre, BorderLayout.NORTH);
         
-        lblDescripcion = new JLabel("");
+        lblDescripcion = new JLabel("<html></html>");
         lblDescripcion.setFont(lblDescripcion.getFont().deriveFont(14f));
         lblDescripcion.setVerticalAlignment(SwingConstants.TOP);
         nombreDescPanel.add(lblDescripcion, BorderLayout.CENTER);
@@ -105,11 +105,40 @@ public class ProyectoDetailPanel extends JPanel {
 
         table.setRowHeight(28);
         table.setFillsViewportHeight(true);
+        
+        // Configurar columna de descripción para permitir múltiples líneas
+        table.getColumnModel().getColumn(0).setCellRenderer(new javax.swing.table.DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                JTextArea textArea = new JTextArea();
+                textArea.setText(value != null ? value.toString() : "");
+                textArea.setWrapStyleWord(true);
+                textArea.setLineWrap(true);
+                textArea.setOpaque(true);
+                textArea.setBorder(new EmptyBorder(4, 4, 4, 4));
+                
+                if (isSelected) {
+                    textArea.setBackground(table.getSelectionBackground());
+                    textArea.setForeground(table.getSelectionForeground());
+                } else {
+                    textArea.setBackground(table.getBackground());
+                    textArea.setForeground(table.getForeground());
+                }
+                
+                int height = textArea.getPreferredSize().height;
+                if (height > table.getRowHeight(row)) {
+                    table.setRowHeight(row, Math.min(height + 8, 200)); // Máximo 200px
+                }
+                
+                return textArea;
+            }
+        });
+        table.getColumnModel().getColumn(0).setPreferredWidth(500);
 
         int actionsCol = tableModel.getColumnCount() - 1;
         table.getColumnModel().getColumn(actionsCol).setCellRenderer(new ActionsRenderer());
         table.getColumnModel().getColumn(actionsCol).setCellEditor(new ActionsEditor());
-        table.getColumnModel().getColumn(actionsCol).setPreferredWidth(100);
+        table.getColumnModel().getColumn(actionsCol).setPreferredWidth(120);
     }
 
     private void loadProyecto() {
@@ -150,12 +179,15 @@ public class ProyectoDetailPanel extends JPanel {
 
     private void updateTitle() {
         if (proyecto != null) {
-            lblNombre.setText(proyecto.getNombre() != null ? proyecto.getNombre() : "");
+            String nombre = proyecto.getNombre() != null ? proyecto.getNombre() : "";
+            nombre = nombre.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+            lblNombre.setText("<html><div style='width: 600px;'>" + nombre + "</div></html>");
+            
             String desc = proyecto.getDescripcion();
-            if (desc != null && !desc.trim().isEmpty()) {
-                lblDescripcion.setText(desc);
+            if (desc != null && !desc.trim().isEmpty()) {                desc = desc.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+                lblDescripcion.setText("<html><div style='width: 600px;'>" + desc + "</div></html>");
             } else {
-                lblDescripcion.setText("");
+                lblDescripcion.setText("<html></html>");
             }
         }
     }
@@ -240,11 +272,7 @@ public class ProyectoDetailPanel extends JPanel {
             if (i == null) return "";
             switch (col) {
                 case 0:
-                    String desc = i.getDescripcion();
-                    if (desc != null && desc.length() > 100) {
-                        return desc.substring(0, 97) + "...";
-                    }
-                    return desc != null ? desc : "";
+                    return i.getDescripcion() != null ? i.getDescripcion() : "";
                 case 1:
                     return "ACCIONES";
                 default:
@@ -268,16 +296,16 @@ public class ProyectoDetailPanel extends JPanel {
         private final JButton btnDelete = new JButton("Eliminar");
 
         public ActionsRenderer() {
-            setLayout(new FlowLayout(FlowLayout.RIGHT, 4, 2));
+            setLayout(new FlowLayout(FlowLayout.CENTER, 4, 2));
             btnView.setToolTipText("Ver detalle");
-            btnView.setPreferredSize(new Dimension(30, 24));
-            btnView.setFont(btnView.getFont().deriveFont(14f));
+            btnView.setFont(btnView.getFont().deriveFont(12f));
+            btnView.setMargin(new Insets(2, 8, 2, 8));
             add(btnView);
             
             if (isAdmin) {
                 btnDelete.setToolTipText("Eliminar");
-                btnDelete.setPreferredSize(new Dimension(30, 24));
-                btnDelete.setFont(btnDelete.getFont().deriveFont(14f));
+                btnDelete.setFont(btnDelete.getFont().deriveFont(12f));
+                btnDelete.setMargin(new Insets(2, 8, 2, 8));
                 add(btnDelete);
             }
             setOpaque(true);
@@ -292,21 +320,21 @@ public class ProyectoDetailPanel extends JPanel {
     }
 
     private class ActionsEditor extends AbstractCellEditor implements TableCellEditor {
-        private final JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 2));
+        private final JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 4, 2));
         private final JButton btnView = new JButton("Ver");
         private final JButton btnDelete = new JButton("Eliminar");
         private int editingRow = -1;
 
         public ActionsEditor() {
             btnView.setToolTipText("Ver detalle");
-            btnView.setPreferredSize(new Dimension(30, 24));
-            btnView.setFont(btnView.getFont().deriveFont(14f));
+            btnView.setFont(btnView.getFont().deriveFont(12f));
+            btnView.setMargin(new Insets(2, 8, 2, 8));
             panel.add(btnView);
             
             if (isAdmin) {
                 btnDelete.setToolTipText("Eliminar");
-                btnDelete.setPreferredSize(new Dimension(30, 24));
-                btnDelete.setFont(btnDelete.getFont().deriveFont(14f));
+                btnDelete.setFont(btnDelete.getFont().deriveFont(12f));
+                btnDelete.setMargin(new Insets(2, 8, 2, 8));
                 panel.add(btnDelete);
             }
 
@@ -371,10 +399,17 @@ public class ProyectoDetailPanel extends JPanel {
 
             @Override
             protected Void doInBackground() {
+                System.out.println("[ProyectoDetailPanel] Iniciando eliminación de incidencia con ID: " + incidencia.getId());
                 try {
                     incidenciaController.delete(incidencia.getId());
+                    System.out.println("[ProyectoDetailPanel] Incidencia eliminada exitosamente");
                     return null;
                 } catch (Exception ex) {
+                    System.out.println("[ProyectoDetailPanel] ERROR durante la eliminación:");
+                    System.out.println("[ProyectoDetailPanel] Tipo: " + ex.getClass().getName());
+                    System.out.println("[ProyectoDetailPanel] Mensaje: " + ex.getMessage());
+                    System.out.println("[ProyectoDetailPanel] Stack trace:");
+                    ex.printStackTrace();
                     this.error = ex;
                     return null;
                 }

@@ -26,6 +26,7 @@ public class IncidenciaDetailPanel extends JPanel {
     private final ComentarioController comentarioController;
     private final UserLoggedInDto currentUser;
     private final Long incidenciaId;
+    private final Runnable onVolver;
 
     private JPanel mainContentPanel;
     private JPanel sidebarPanel;
@@ -34,11 +35,13 @@ public class IncidenciaDetailPanel extends JPanel {
     public IncidenciaDetailPanel(IncidenciaController incidenciaController,
                                 ComentarioController comentarioController,
                                 UserLoggedInDto currentUser,
-                                Long incidenciaId) {
+                                Long incidenciaId,
+                                Runnable onVolver) {
         this.incidenciaController = incidenciaController;
         this.comentarioController = comentarioController;
         this.currentUser = currentUser;
         this.incidenciaId = incidenciaId;
+        this.onVolver = onVolver;
         buildUI();
         loadIncidencia();
     }
@@ -46,6 +49,16 @@ public class IncidenciaDetailPanel extends JPanel {
     private void buildUI() {
         setLayout(new BorderLayout());
         setBorder(new EmptyBorder(12, 12, 12, 12));
+
+        JPanel topPanel = new JPanel(new BorderLayout());
+        JButton btnVolver = new JButton("← Volver");
+        btnVolver.addActionListener(e -> {
+            if (onVolver != null) {
+                onVolver.run();
+            }
+        });
+        topPanel.add(btnVolver, BorderLayout.WEST);
+        add(topPanel, BorderLayout.NORTH);
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         splitPane.setDividerLocation(0.8); // 80% izquierda, 20% derecha

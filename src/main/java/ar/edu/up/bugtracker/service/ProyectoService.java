@@ -90,7 +90,7 @@ public class ProyectoService {
         }
     }
 
-    public void delete(Long id, UserLoggedInDto currentUser) {
+    public void delete(Long id, UserLoggedInDto currentUser) {        
         validateAdmin(currentUser, "Solo los administradores pueden eliminar proyectos");
         
         Proyecto proyecto = proyectoDao.findById(id);
@@ -100,6 +100,25 @@ public class ProyectoService {
 
         try {
             begin();
+            
+            int versionesEliminadas = em.createQuery("DELETE FROM IncidenciaVersion iv WHERE iv.incidencia.proyecto.id = :proyectoId")
+                    .setParameter("proyectoId", id)
+                    .executeUpdate();
+            em.flush();
+            em.clear();
+            
+            int incidenciasEliminadas = em.createQuery("DELETE FROM Incidencia i WHERE i.proyecto.id = :proyectoId")
+                    .setParameter("proyectoId", id)
+                    .executeUpdate();
+            em.flush();
+            em.clear();
+            
+            Proyecto proyectoParaEliminar = proyectoDao.findById(id);
+            if (proyectoParaEliminar == null) {
+                throw new NotFoundException("Proyecto no encontrado");
+            }
+            
+            // Eliminar el proyecto
             proyectoDao.deleteById(id);
             commit();
         } catch (RuntimeException ex) {

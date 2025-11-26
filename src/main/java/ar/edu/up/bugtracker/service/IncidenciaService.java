@@ -238,6 +238,22 @@ public class IncidenciaService {
 
         try {
             begin();
+            
+            // Eliminar todos los comentarios
+            em.createQuery("DELETE FROM Comentario c WHERE c.incidencia.id = :incidenciaId")
+                    .setParameter("incidenciaId", id)
+                    .executeUpdate();
+            em.flush();
+            em.clear();
+            
+            // Eliminar todas las versiones
+            em.createQuery("DELETE FROM IncidenciaVersion iv WHERE iv.incidencia.id = :incidenciaId")
+                    .setParameter("incidenciaId", id)
+                    .executeUpdate();
+            em.flush();
+            em.clear();
+            
+            // Eliminar la incidencia
             incidenciaDao.deleteById(id);
             commit();
         } catch (RuntimeException ex) {

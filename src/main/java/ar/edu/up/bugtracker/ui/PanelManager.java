@@ -167,7 +167,19 @@ public class PanelManager extends JFrame {
             showLogin();
             return;
         }
-        incidenciaDetailPanel = new IncidenciaDetailPanel(incidenciaController, comentarioController, currentUser, incidenciaId);
-        swapCenter(incidenciaDetailPanel);
+        try {
+            var incidencia = incidenciaController.getById(incidenciaId);
+            Long proyectoId = incidencia.getProyecto() != null ? incidencia.getProyecto().getId() : null;
+            incidenciaDetailPanel = new IncidenciaDetailPanel(
+                    incidenciaController, 
+                    comentarioController, 
+                    currentUser, 
+                    incidenciaId,
+                    proyectoId != null ? () -> showProyectoDetail(proyectoId) : this::showHome
+            );
+            swapCenter(incidenciaDetailPanel);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error al cargar incidencia: " + e.getMessage());
+        }
     }
 }
