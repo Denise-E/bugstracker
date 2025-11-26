@@ -138,101 +138,100 @@ public class IncidenciaDetailPanel extends JPanel {
     }
 
     private void buildSidebar(Incidencia incidencia) {
-        try {
-            this.incidenciaActual = incidencia;
-            sidebarPanel.setBorder(new TitledBorder("Información"));
+        this.incidenciaActual = incidencia;
+        sidebarPanel.setBorder(new TitledBorder("Información"));
 
-            // Responsable
-            System.out.println("[IncidenciaDetailPanel] Creando panel de responsable...");
-            JPanel responsablePanel = new JPanel(new BorderLayout());
-            responsablePanel.setBorder(new EmptyBorder(5, 5, 5, 5));
-            JLabel responsableLabel = new JLabel("Responsable:");
-            responsableLabel.setFont(responsableLabel.getFont().deriveFont(Font.BOLD));
-            responsablePanel.add(responsableLabel, BorderLayout.NORTH);
-            
-            comboResponsable = new JComboBox<>();
-            comboResponsable.setPreferredSize(new Dimension(200, 25));
-            comboResponsable.addItem(null); // Opción "Sin asignar"
-            comboResponsable.setRenderer(new DefaultListCellRenderer() {
-                @Override
-                public Component getListCellRendererComponent(JList<?> list, Object value, int index,
-                                                              boolean isSelected, boolean cellHasFocus) {
-                    super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                    if (value == null) {
-                        setText("Sin asignar");
-                    } else if (value instanceof UserDetailDto) {
-                        UserDetailDto usuario = (UserDetailDto) value;
-                        String nombreCompleto = usuario.getNombre() != null ? usuario.getNombre() : "";
-                        String apellido = usuario.getApellido() != null ? usuario.getApellido() : "";
-                        if (!apellido.isEmpty()) {
-                            nombreCompleto += " " + apellido;
-                        }
-                        setText(nombreCompleto.isEmpty() ? usuario.getEmail() : nombreCompleto);
-                    }
-                    return this;
-                }
-            });
-            
-            // Preseleccionar responsable actual
-            Long responsableId = incidencia.getResponsable() != null ? incidencia.getResponsable().getId() : null;
-            System.out.println("[IncidenciaDetailPanel] Responsable ID: " + responsableId);
-            if (responsableId != null) {
-                System.out.println("[IncidenciaDetailPanel] Cargando usuarios y preseleccionando responsable...");
-                loadUsuariosAndSelect(responsableId);
-            } else {
-                System.out.println("[IncidenciaDetailPanel] Cargando usuarios sin preselección...");
-                loadUsuarios();
-            }
-            
-            // Deshabilitar temporalmente el listener para evitar disparos durante la carga
-            comboResponsable.addActionListener(e -> {
-                if (comboResponsable.getSelectedItem() != null && incidenciaActual != null) {
-                    onResponsableChanged();
-                }
-            });
+        // Responsable
+        System.out.println("[IncidenciaDetailPanel] Creando panel de responsable...");
+        JPanel responsablePanel = new JPanel(new BorderLayout());
+        responsablePanel.setBorder(new EmptyBorder(5, 5, 5, 5));
+        JLabel responsableLabel = new JLabel("Responsable:");
+        responsableLabel.setFont(responsableLabel.getFont().deriveFont(Font.BOLD));
+        responsablePanel.add(responsableLabel, BorderLayout.NORTH);
         
+        comboResponsable = new JComboBox<>();
+        comboResponsable.setPreferredSize(new Dimension(200, 25));
+        comboResponsable.addItem(null); // Opción "Sin asignar"
+        comboResponsable.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+                                                          boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value == null) {
+                    setText("Sin asignar");
+                } else if (value instanceof UserDetailDto) {
+                    UserDetailDto usuario = (UserDetailDto) value;
+                    String nombreCompleto = usuario.getNombre() != null ? usuario.getNombre() : "";
+                    String apellido = usuario.getApellido() != null ? usuario.getApellido() : "";
+                    if (!apellido.isEmpty()) {
+                        nombreCompleto += " " + apellido;
+                    }
+                    setText(nombreCompleto.isEmpty() ? usuario.getEmail() : nombreCompleto);
+                }
+                return this;
+            }
+        });
+        
+        // Preseleccionar responsable actual
+        Long responsableId = incidencia.getResponsable() != null ? incidencia.getResponsable().getId() : null;
+        System.out.println("[IncidenciaDetailPanel] Responsable ID: " + responsableId);
+        if (responsableId != null) {
+            System.out.println("[IncidenciaDetailPanel] Cargando usuarios y preseleccionando responsable...");
+            loadUsuariosAndSelect(responsableId);
+        } else {
+            System.out.println("[IncidenciaDetailPanel] Cargando usuarios sin preselección...");
+            loadUsuarios();
+        }
+        
+        // Deshabilitar temporalmente el listener para evitar disparos durante la carga
+        comboResponsable.addActionListener(e -> {
+            if (comboResponsable.getSelectedItem() != null && incidenciaActual != null) {
+                onResponsableChanged();
+            }
+        });
+    
         responsablePanel.add(comboResponsable, BorderLayout.CENTER);
         sidebarPanel.add(responsablePanel);
 
         sidebarPanel.add(Box.createVerticalStrut(5));
 
-            // Estado
-            System.out.println("[IncidenciaDetailPanel] Creando panel de estado...");
-            JPanel estadoPanel = new JPanel(new BorderLayout());
-            estadoPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
-            JLabel estadoLabel = new JLabel("Estado:");
-            estadoLabel.setFont(estadoLabel.getFont().deriveFont(Font.BOLD));
-            estadoPanel.add(estadoLabel, BorderLayout.NORTH);
-            
-            comboEstado = new JComboBox<>();
-            comboEstado.setPreferredSize(new Dimension(200, 25));
-            comboEstado.setRenderer(new DefaultListCellRenderer() {
-                @Override
-                public Component getListCellRendererComponent(JList<?> list, Object value, int index,
-                                                              boolean isSelected, boolean cellHasFocus) {
-                    super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                    if (value instanceof IncidenciaEstado) {
-                        setText(((IncidenciaEstado) value).getNombre());
-                    }
-                    return this;
-                }
-            });
-            
-            // Preseleccionar estado actual
-            Long estadoActualId = incidencia.getCurrentVersion() != null && incidencia.getCurrentVersion().getEstado() != null
-                    ? incidencia.getCurrentVersion().getEstado().getId()
-                    : null;
-            System.out.println("[IncidenciaDetailPanel] Estado ID: " + estadoActualId);
-            System.out.println("[IncidenciaDetailPanel] Cargando estados y preseleccionando...");
-            loadEstadosAndSelect(estadoActualId);
-            
-            // Deshabilitar temporalmente el listener para evitar disparos durante la carga
-            comboEstado.addActionListener(e -> {
-                if (comboEstado.getSelectedItem() != null && incidenciaActual != null) {
-                    onEstadoChanged();
-                }
-            });
+        // Estado
+        System.out.println("[IncidenciaDetailPanel] Creando panel de estado...");
+        JPanel estadoPanel = new JPanel(new BorderLayout());
+        estadoPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
+        JLabel estadoLabel = new JLabel("Estado:");
+        estadoLabel.setFont(estadoLabel.getFont().deriveFont(Font.BOLD));
+        estadoPanel.add(estadoLabel, BorderLayout.NORTH);
         
+        comboEstado = new JComboBox<>();
+        comboEstado.setPreferredSize(new Dimension(200, 25));
+        comboEstado.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+                                                          boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof IncidenciaEstado) {
+                    setText(((IncidenciaEstado) value).getNombre());
+                }
+                return this;
+            }
+        });
+        
+        // Preseleccionar estado actual
+        Long estadoActualId = incidencia.getCurrentVersion() != null && incidencia.getCurrentVersion().getEstado() != null
+                ? incidencia.getCurrentVersion().getEstado().getId()
+                : null;
+        System.out.println("[IncidenciaDetailPanel] Estado ID: " + estadoActualId);
+        System.out.println("[IncidenciaDetailPanel] Cargando estados y preseleccionando...");
+        loadEstadosAndSelect(estadoActualId);
+        
+        // Deshabilitar temporalmente el listener para evitar disparos durante la carga
+        comboEstado.addActionListener(e -> {
+            if (comboEstado.getSelectedItem() != null && incidenciaActual != null) {
+                onEstadoChanged();
+            }
+        });
+    
         estadoPanel.add(comboEstado, BorderLayout.CENTER);
         sidebarPanel.add(estadoPanel);
 
