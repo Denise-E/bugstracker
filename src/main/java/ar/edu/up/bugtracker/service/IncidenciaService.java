@@ -40,9 +40,9 @@ public class IncidenciaService {
             throw new AuthException("Debes estar autenticado para crear incidencias");
         }
 
-        IncidenciaEstado estadoNueva = incidenciaDao.findEstadoByNombre(IncidenciaEstadoEnum.NUEVA.getNombre());
-        if (estadoNueva == null) {
-            throw new BusinessException("No se encontró el estado inicial NUEVA");
+        IncidenciaEstado estadoInicial = incidenciaDao.findEstadoById(1L);
+        if (estadoInicial == null) {
+            throw new BusinessException("No se encontró el estado inicial con ID 1");
         }
 
         Usuario creador = em.find(Usuario.class, currentUser.getId());
@@ -58,15 +58,21 @@ public class IncidenciaService {
                 incidencia.setProyecto(proyectoGestionado);
             }
 
+            if (incidencia.getResponsable() != null && incidencia.getResponsable().getId() != null) {
+                Usuario responsableGestionado = em.getReference(Usuario.class, incidencia.getResponsable().getId());
+                incidencia.setResponsable(responsableGestionado);
+            }
+
             Long incidenciaId = incidenciaDao.create(incidencia);
 
             Incidencia incidenciaGestionada = incidenciaDao.findById(incidenciaId);
 
             IncidenciaVersion versionInicial = new IncidenciaVersion();
             versionInicial.setIncidencia(incidenciaGestionada);
-            versionInicial.setEstado(estadoNueva);
+            versionInicial.setEstado(estadoInicial);
             versionInicial.setCreatedBy(creador);
-            versionInicial.setDetalles("{\"tipo\":\"creacion\",\"estado\":\"NUEVA\"}");
+            String estadoNombre = estadoInicial.getNombre() != null ? estadoInicial.getNombre() : "TODO";
+            versionInicial.setDetalles("{\"tipo\":\"creacion\",\"estado\":\"" + estadoNombre + "\"}");
 
             Long versionId = versionDao.create(versionInicial);
 
@@ -131,6 +137,8 @@ public class IncidenciaService {
         if (incidencia.getResponsable() != null && incidencia.getResponsable().getId() != null) {
             Usuario responsable = em.find(Usuario.class, incidencia.getResponsable().getId());
             existente.setResponsable(responsable);
+        } else {
+            existente.setResponsable(null);
         }
 
         try {

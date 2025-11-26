@@ -154,6 +154,7 @@ public class PanelManager extends JFrame {
                 proyectoController,
                 incidenciaController,
                 comentarioController,
+                userController,
                 currentUser,
                 proyectoId,
                 this::showIncidenciaDetail
@@ -172,7 +173,8 @@ public class PanelManager extends JFrame {
             Long proyectoId = incidencia.getProyecto() != null ? incidencia.getProyecto().getId() : null;
             incidenciaDetailPanel = new IncidenciaDetailPanel(
                     incidenciaController, 
-                    comentarioController, 
+                    comentarioController,
+                    userController,
                     currentUser, 
                     incidenciaId,
                     proyectoId != null ? () -> showProyectoDetail(proyectoId) : this::showHome

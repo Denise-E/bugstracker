@@ -3,6 +3,7 @@ package ar.edu.up.bugtracker.ui.projects;
 import ar.edu.up.bugtracker.controller.ComentarioController;
 import ar.edu.up.bugtracker.controller.IncidenciaController;
 import ar.edu.up.bugtracker.controller.ProyectoController;
+import ar.edu.up.bugtracker.controller.UserController;
 import ar.edu.up.bugtracker.exceptions.ForbiddenException;
 import ar.edu.up.bugtracker.exceptions.NotFoundException;
 import ar.edu.up.bugtracker.models.Incidencia;
@@ -25,6 +26,7 @@ public class ProyectoDetailPanel extends JPanel {
     private final ProyectoController proyectoController;
     private final IncidenciaController incidenciaController;
     private final ComentarioController comentarioController;
+    private final UserController userController;
     private final UserLoggedInDto currentUser;
     private final Long proyectoId;
     private final boolean isAdmin;
@@ -39,12 +41,14 @@ public class ProyectoDetailPanel extends JPanel {
     public ProyectoDetailPanel(ProyectoController proyectoController,
                                IncidenciaController incidenciaController,
                                ComentarioController comentarioController,
+                               UserController userController,
                                UserLoggedInDto currentUser,
                                Long proyectoId,
                                Consumer<Long> onViewIncidencia) {
         this.proyectoController = proyectoController;
         this.incidenciaController = incidenciaController;
         this.comentarioController = comentarioController;
+        this.userController = userController;
         this.currentUser = currentUser;
         this.proyectoId = proyectoId;
         this.isAdmin = currentUser != null && "ADMIN".equalsIgnoreCase(currentUser.getPerfil());
@@ -198,6 +202,7 @@ public class ProyectoDetailPanel extends JPanel {
         IncidenciaDialog dlg = new IncidenciaDialog(
                 SwingUtilities.getWindowAncestor(this),
                 incidenciaController,
+                userController,
                 currentUser,
                 proyectoId,
                 this::loadIncidencias
