@@ -94,9 +94,26 @@ public class ProyectoDetailPanel extends JPanel {
         
         proyectoInfoPanel.add(nombreDescPanel, BorderLayout.CENTER);
         
+        JPanel botonesPanel = new JPanel();
+        botonesPanel.setLayout(new BoxLayout(botonesPanel, BoxLayout.Y_AXIS));
+        
+        JButton btnMetricas = new JButton("Métricas");
+        btnMetricas.setPreferredSize(new Dimension(120, 30));
+        btnMetricas.setMaximumSize(new Dimension(120, 30));
+        btnMetricas.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnMetricas.addActionListener(e -> onMetricasClick());
+        botonesPanel.add(btnMetricas);
+        
+        botonesPanel.add(Box.createVerticalStrut(5));
+        
         JButton btnCrearIncidencia = new JButton("+ Incidencia");
+        btnCrearIncidencia.setPreferredSize(new Dimension(120, 30));
+        btnCrearIncidencia.setMaximumSize(new Dimension(120, 30));
+        btnCrearIncidencia.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnCrearIncidencia.addActionListener(e -> onCreateIncidenciaClick());
-        proyectoInfoPanel.add(btnCrearIncidencia, BorderLayout.EAST);
+        botonesPanel.add(btnCrearIncidencia);
+        
+        proyectoInfoPanel.add(botonesPanel, BorderLayout.EAST);
         
         centerPanel.add(proyectoInfoPanel, BorderLayout.NORTH);
 
@@ -193,6 +210,15 @@ public class ProyectoDetailPanel extends JPanel {
             } else {
                 lblDescripcion.setText("<html></html>");
             }
+        }
+    }
+    
+    private void onMetricasClick() {
+        if (proyecto == null) return;
+        
+        Window window = SwingUtilities.getWindowAncestor(ProyectoDetailPanel.this);
+        if (window instanceof ar.edu.up.bugtracker.ui.PanelManager) {
+            ((ar.edu.up.bugtracker.ui.PanelManager) window).showProyectoMetricas(proyectoId);
         }
     }
     

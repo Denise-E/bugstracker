@@ -60,7 +60,10 @@ public class IncidenciaDao implements IDao<Incidencia, Long> {
     public List<Incidencia> findByProyecto(Long proyectoId) {
         try {
             return em.createQuery(
-                    "SELECT i FROM Incidencia i WHERE i.proyecto.id = :proyectoId ORDER BY i.id",
+                    "SELECT DISTINCT i FROM Incidencia i " +
+                    "LEFT JOIN FETCH i.currentVersion cv " +
+                    "LEFT JOIN FETCH cv.estado " +
+                    "WHERE i.proyecto.id = :proyectoId ORDER BY i.id",
                     Incidencia.class)
                     .setParameter("proyectoId", proyectoId)
                     .getResultList();

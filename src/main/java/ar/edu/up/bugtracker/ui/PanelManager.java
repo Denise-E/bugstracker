@@ -8,6 +8,7 @@ import ar.edu.up.bugtracker.controller.UserRoleController;
 import ar.edu.up.bugtracker.service.dto.UserLoggedInDto;
 import ar.edu.up.bugtracker.ui.incidencias.IncidenciaDetailPanel;
 import ar.edu.up.bugtracker.ui.projects.ProyectoDetailPanel;
+import ar.edu.up.bugtracker.ui.projects.ProyectoMetricasPanel;
 import ar.edu.up.bugtracker.ui.users.auth.LoginPanel;
 import ar.edu.up.bugtracker.ui.users.auth.RegisterPanel;
 import ar.edu.up.bugtracker.ui.components.HeaderPanel;
@@ -40,6 +41,7 @@ public class PanelManager extends JFrame {
     private MiPerfilPanel miPerfilPanel;
     private UsuariosListPanel usuariosListPanel;
     private ProyectoDetailPanel proyectoDetailPanel;
+    private ProyectoMetricasPanel proyectoMetricasPanel;
     private IncidenciaDetailPanel incidenciaDetailPanel;
 
     public PanelManager(UserController userController, UserRoleController roleController, ProyectoController proyectoController,
@@ -183,5 +185,20 @@ public class PanelManager extends JFrame {
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error al cargar incidencia: " + e.getMessage());
         }
+    }
+
+    public void showProyectoMetricas(Long proyectoId) {
+        if (currentUser == null) {
+            JOptionPane.showMessageDialog(this, "Sesión expirada. Iniciá sesión nuevamente.");
+            showLogin();
+            return;
+        }
+        proyectoMetricasPanel = new ProyectoMetricasPanel(
+                proyectoController,
+                incidenciaController,
+                proyectoId,
+                this::showProyectoDetail
+        );
+        swapCenter(proyectoMetricasPanel);
     }
 }

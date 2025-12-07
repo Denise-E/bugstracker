@@ -521,10 +521,12 @@ public class IncidenciaDetailPanel extends JPanel {
         descripcionLabel.setFont(descripcionLabel.getFont().deriveFont(Font.BOLD));
         descripcionPanel.add(descripcionLabel, BorderLayout.NORTH);
         
+        // Actualizar descripción original si no está establecida
         if (descripcionOriginal == null) {
             descripcionOriginal = incidencia.getDescripcion() != null ? incidencia.getDescripcion() : "";
         }
         
+        // Crear o actualizar el campo de descripción
         if (descripcionField == null) {
             descripcionField = new JTextField(descripcionOriginal);
             descripcionField.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -544,6 +546,7 @@ public class IncidenciaDetailPanel extends JPanel {
         }
         descripcionPanel.add(descripcionField, BorderLayout.CENTER);
         
+        // Botón Guardar
         if (btnGuardarDescripcion == null) {
             btnGuardarDescripcion = new JButton("Guardar");
             btnGuardarDescripcion.setPreferredSize(new Dimension(100, 30));
@@ -580,6 +583,7 @@ public class IncidenciaDetailPanel extends JPanel {
         comentariosLabel.setFont(comentariosLabel.getFont().deriveFont(Font.BOLD));
         comentariosPanel.add(comentariosLabel, BorderLayout.NORTH);
         
+        // Crear o reutilizar el campo de comentarios
         if (comentarioTextArea == null) {
             comentarioTextArea = new JTextArea(5, 0);
             comentarioTextArea.setLineWrap(true);
@@ -834,9 +838,13 @@ public class IncidenciaDetailPanel extends JPanel {
             protected Void doInBackground() {
                 try {
                     Comentario comentario = new Comentario();
-                    // Usar la incidencia actual que ya tiene el ID correcto
-                    // El servicio se encargará de obtener la referencia gestionada correcta usando em.getReference()
-                    comentario.setIncidencia(incidenciaActual);
+                    Incidencia incidenciaRef = new Incidencia() {
+                        @Override
+                        public Long getId() {
+                            return incidenciaId;
+                        }
+                    };
+                    comentario.setIncidencia(incidenciaRef);
                     comentario.setTexto(textoComentario);
                     
                     comentarioController.create(comentario, currentUser);
