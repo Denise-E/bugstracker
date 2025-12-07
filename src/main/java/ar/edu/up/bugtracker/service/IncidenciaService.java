@@ -105,16 +105,46 @@ public class IncidenciaService {
     }
 
     public Incidencia getById(Long id) {
-        try {
-            Incidencia incidencia = incidenciaDao.findById(id);
-            if (incidencia == null) {
-                throw new NotFoundException("Incidencia no encontrada");
+        // Sincronizar el acceso al EntityManager para evitar problemas con múltiples threads
+        synchronized (em) {
+            try {
+                boolean transactionStarted = !em.getTransaction().isActive();
+                if (transactionStarted) {
+                    em.getTransaction().begin();
+                }
+                
+                Incidencia incidencia = incidenciaDao.findById(id);
+                if (incidencia == null) {
+                    throw new NotFoundException("Incidencia no encontrada");
+                }
+                
+                if (incidencia.getProyecto() != null) {
+                    incidencia.getProyecto().getId();
+                    incidencia.getProyecto().getNombre();
+                }
+                if (incidencia.getResponsable() != null) {
+                    incidencia.getResponsable().getId();
+                }
+                if (incidencia.getCurrentVersion() != null) {
+                    incidencia.getCurrentVersion().getId();
+                    if (incidencia.getCurrentVersion().getEstado() != null) {
+                        incidencia.getCurrentVersion().getEstado().getId();
+                        incidencia.getCurrentVersion().getEstado().getNombre();
+                    }
+                    if (incidencia.getCurrentVersion().getCreatedBy() != null) {
+                        incidencia.getCurrentVersion().getCreatedBy().getId();
+                    }
+                }
+                
+                em.flush(); 
+                
+                return incidencia;
+            } catch (NotFoundException ex) {
+                throw ex;
+            } catch (RuntimeException ex) {
+                rollbackSilently();
+                throw new AppException("Error obteniendo incidencia", ex);
             }
-            return incidencia;
-        } catch (NotFoundException ex) {
-            throw ex;
-        } catch (RuntimeException ex) {
-            throw new AppException("Error obteniendo incidencia", ex);
         }
     }
 
@@ -209,18 +239,69 @@ public class IncidenciaService {
     }
 
     public List<IncidenciaVersion> getHistorialVersiones(Long incidenciaId) {
-        try {
-            return versionDao.findByIncidencia(incidenciaId);
-        } catch (RuntimeException ex) {
-            throw new AppException("Error obteniendo historial de versiones", ex);
+        // Sincronizar el acceso al EntityManager para evitar problemas con múltiples threads
+        synchronized (em) {
+            try {
+                boolean transactionStarted = !em.getTransaction().isActive();
+                if (transactionStarted) {
+                    em.getTransaction().begin();
+                }
+                
+                List<IncidenciaVersion> versiones = versionDao.findByIncidencia(incidenciaId);
+                
+                if (versiones != null) {
+                    versiones.size(); 
+                    for (IncidenciaVersion version : versiones) {
+                        version.getId();
+                        version.getCreatedAt();
+                        if (version.getEstado() != null) {
+                            version.getEstado().getId();
+                            version.getEstado().getNombre();
+                        }
+                        if (version.getCreatedBy() != null) {
+                            version.getCreatedBy().getId();
+                        }
+                    }
+                }
+                
+                em.flush(); 
+                
+                return versiones;
+            } catch (RuntimeException ex) {
+                rollbackSilently();
+                throw new AppException("Error obteniendo historial de versiones", ex);
+            }
         }
     }
 
     public List<IncidenciaEstado> getAllEstados() {
-        try {
-            return incidenciaDao.findAllEstados();
-        } catch (RuntimeException ex) {
-            throw new AppException("Error obteniendo lista de estados", ex);
+        // Sincronizar el acceso al EntityManager para evitar problemas con múltiples threads
+        // Esto es necesario porque EntityManager no es thread-safe y múltiples SwingWorker
+        // pueden ejecutarse simultáneamente
+        synchronized (em) {
+            try {
+                boolean transactionStarted = !em.getTransaction().isActive();
+                if (transactionStarted) {
+                    em.getTransaction().begin();
+                }
+                
+                List<IncidenciaEstado> estados = incidenciaDao.findAllEstados();
+                
+                if (estados != null) {
+                    estados.size(); 
+                    for (IncidenciaEstado estado : estados) {
+                        estado.getId(); 
+                        estado.getNombre();
+                    }
+                }
+                
+                em.flush(); 
+                
+                return estados;
+            } catch (RuntimeException ex) {
+                rollbackSilently();
+                throw new AppException("Error obteniendo lista de estados", ex);
+            }
         }
     }
 

@@ -46,7 +46,10 @@ public class IncidenciaVersionDao implements IDao<IncidenciaVersion, Long> {
     public List<IncidenciaVersion> findByIncidencia(Long incidenciaId) {
         try {
             return em.createQuery(
-                    "SELECT iv FROM IncidenciaVersion iv WHERE iv.incidencia.id = :incidenciaId ORDER BY iv.createdAt DESC",
+                    "SELECT DISTINCT iv FROM IncidenciaVersion iv " +
+                    "LEFT JOIN FETCH iv.estado " +
+                    "LEFT JOIN FETCH iv.createdBy " +
+                    "WHERE iv.incidencia.id = :incidenciaId ORDER BY iv.createdAt DESC",
                     IncidenciaVersion.class)
                     .setParameter("incidenciaId", incidenciaId)
                     .getResultList();

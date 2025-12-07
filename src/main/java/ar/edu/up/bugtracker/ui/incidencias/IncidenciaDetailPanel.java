@@ -92,13 +92,31 @@ public class IncidenciaDetailPanel extends JPanel {
     }
 
     private void loadIncidencia() {
-        new SwingWorker<Incidencia, Void>() {
+        new SwingWorker<IncidenciaData, Void>() {
             private Exception error;
 
             @Override
-            protected Incidencia doInBackground() {
+            protected IncidenciaData doInBackground() {
                 try {
-                    return incidenciaController.getById(incidenciaId);
+                    Incidencia incidencia = incidenciaController.getById(incidenciaId);
+                    if (incidencia == null) {
+                        return null;
+                    }
+                    
+                    // Extraer todos los IDs necesarios ANTES de que la sesión se cierre
+                    // Esto evita el error "Operation not allowed after ResultSet closed"
+                    Long responsableId = null;
+                    if (incidencia.getResponsable() != null) {
+                        responsableId = incidencia.getResponsable().getId();
+                    }
+                    
+                    Long estadoId = null;
+                    if (incidencia.getCurrentVersion() != null && 
+                        incidencia.getCurrentVersion().getEstado() != null) {
+                        estadoId = incidencia.getCurrentVersion().getEstado().getId();
+                    }
+                    
+                    return new IncidenciaData(incidencia, responsableId, estadoId);
                 } catch (Exception ex) {
                     this.error = ex;
                     return null;
@@ -115,9 +133,9 @@ public class IncidenciaDetailPanel extends JPanel {
                     return;
                 }
                 try {
-                    Incidencia incidencia = get();
-                    if (incidencia != null) {
-                        populateUI(incidencia);
+                    IncidenciaData data = get();
+                    if (data != null && data.incidencia != null) {
+                        populateUI(data.incidencia, data.responsableId, data.estadoId);
                     }
                 } catch (Exception e) {
                     JOptionPane.showMessageDialog(IncidenciaDetailPanel.this, "Error inesperado.");
@@ -125,24 +143,35 @@ public class IncidenciaDetailPanel extends JPanel {
             }
         }.execute();
     }
+    
+    private static class IncidenciaData {
+        final Incidencia incidencia;
+        final Long responsableId;
+        final Long estadoId;
+        
+        IncidenciaData(Incidencia incidencia, Long responsableId, Long estadoId) {
+            this.incidencia = incidencia;
+            this.responsableId = responsableId;
+            this.estadoId = estadoId;
+        }
+    }
 
-    private void populateUI(Incidencia incidencia) {
+    private void populateUI(Incidencia incidencia, Long responsableId, Long estadoId) {
         mainContentPanel.removeAll();
         sidebarPanel.removeAll();
 
-            buildSidebar(incidencia);
-            buildMainContent(incidencia);
+        buildSidebar(incidencia, responsableId, estadoId);
+        buildMainContent(incidencia);
 
         revalidate();
         repaint();
     }
 
-    private void buildSidebar(Incidencia incidencia) {
+    private void buildSidebar(Incidencia incidencia, Long responsableId, Long estadoId) {
         this.incidenciaActual = incidencia;
         sidebarPanel.setBorder(new TitledBorder("Información"));
 
         // Responsable
-        System.out.println("[IncidenciaDetailPanel] Creando panel de responsable...");
         JPanel responsablePanel = new JPanel(new BorderLayout());
         responsablePanel.setBorder(new EmptyBorder(5, 5, 5, 5));
         JLabel responsableLabel = new JLabel("Responsable:");
@@ -172,14 +201,10 @@ public class IncidenciaDetailPanel extends JPanel {
             }
         });
         
-        // Preseleccionar responsable actual
-        Long responsableId = incidencia.getResponsable() != null ? incidencia.getResponsable().getId() : null;
-        System.out.println("[IncidenciaDetailPanel] Responsable ID: " + responsableId);
+        // Preseleccionar responsable actual usando el ID pasado como parámetro
         if (responsableId != null) {
-            System.out.println("[IncidenciaDetailPanel] Cargando usuarios y preseleccionando responsable...");
             loadUsuariosAndSelect(responsableId);
         } else {
-            System.out.println("[IncidenciaDetailPanel] Cargando usuarios sin preselección...");
             loadUsuarios();
         }
         
@@ -196,7 +221,6 @@ public class IncidenciaDetailPanel extends JPanel {
         sidebarPanel.add(Box.createVerticalStrut(5));
 
         // Estado
-        System.out.println("[IncidenciaDetailPanel] Creando panel de estado...");
         JPanel estadoPanel = new JPanel(new BorderLayout());
         estadoPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
         JLabel estadoLabel = new JLabel("Estado:");
@@ -217,13 +241,8 @@ public class IncidenciaDetailPanel extends JPanel {
             }
         });
         
-        // Preseleccionar estado actual
-        Long estadoActualId = incidencia.getCurrentVersion() != null && incidencia.getCurrentVersion().getEstado() != null
-                ? incidencia.getCurrentVersion().getEstado().getId()
-                : null;
-        System.out.println("[IncidenciaDetailPanel] Estado ID: " + estadoActualId);
-        System.out.println("[IncidenciaDetailPanel] Cargando estados y preseleccionando...");
-        loadEstadosAndSelect(estadoActualId);
+        // Preseleccionar estado actual usando el ID pasado como parámetro
+        loadEstadosAndSelect(estadoId);
         
         // Deshabilitar temporalmente el listener para evitar disparos durante la carga
         comboEstado.addActionListener(e -> {
@@ -299,7 +318,7 @@ public class IncidenciaDetailPanel extends JPanel {
             protected void done() {
                 try {
                     List<UserDetailDto> usuarios = get();
-                    if (usuarios != null) {
+                    if (usuarios != null && !usuarios.isEmpty()) {
                         comboResponsable.removeAllItems();
                         comboResponsable.addItem(null);
                         UserDetailDto seleccionado = null;
@@ -307,11 +326,14 @@ public class IncidenciaDetailPanel extends JPanel {
                             comboResponsable.addItem(usuario);
                             if (usuario.getId() != null && usuario.getId().equals(responsableId)) {
                                 seleccionado = usuario;
+                                System.out.println("[IncidenciaDetailPanel] Usuario responsable encontrado: " + usuario.getEmail());
                             }
                         }
                         if (seleccionado != null) {
                             comboResponsable.setSelectedItem(seleccionado);
                         }
+                    } else {
+                        System.out.println("[IncidenciaDetailPanel] No se pudieron cargar usuarios");
                     }
                 } catch (Exception e) {
                     // Ignorar errores silenciosamente
@@ -321,6 +343,8 @@ public class IncidenciaDetailPanel extends JPanel {
     }
 
     private void loadEstadosAndSelect(Long estadoId) {
+        final Long estadoIdFinal = estadoId;
+        
         new SwingWorker<List<IncidenciaEstado>, Void>() {
             @Override
             protected List<IncidenciaEstado> doInBackground() {
@@ -335,21 +359,26 @@ public class IncidenciaDetailPanel extends JPanel {
             protected void done() {
                 try {
                     List<IncidenciaEstado> estados = get();
-                    if (estados != null) {
+                    if (estados != null && !estados.isEmpty()) {
                         comboEstado.removeAllItems();
-                        IncidenciaEstado seleccionado = null;
+                        int indiceSeleccionado = -1;
+                        int indice = 0;
+                        
                         for (IncidenciaEstado estado : estados) {
                             comboEstado.addItem(estado);
-                            if (estado.getId() != null && estado.getId().equals(estadoId)) {
-                                seleccionado = estado;
+                            if (estadoIdFinal != null && estado.getId() != null && estadoIdFinal.equals(estado.getId())) {
+                                indiceSeleccionado = indice;
                             }
+                            indice++;
                         }
-                        if (seleccionado != null) {
-                            comboEstado.setSelectedItem(seleccionado);
+                        
+                        if (indiceSeleccionado >= 0) {
+                            comboEstado.setSelectedIndex(indiceSeleccionado);
+                        } else if (!estados.isEmpty()) {
+                            comboEstado.setSelectedIndex(0);
                         }
                     }
                 } catch (Exception e) {
-                    // Ignorar errores silenciosamente
                 }
             }
         }.execute();

@@ -29,7 +29,19 @@ public class IncidenciaDao implements IDao<Incidencia, Long> {
     @Override
     public Incidencia findById(Long id) {
         try {
-            return em.find(Incidencia.class, id);
+            List<Incidencia> resultados = em.createQuery(
+                    "SELECT DISTINCT i FROM Incidencia i " +
+                    "LEFT JOIN FETCH i.proyecto " +
+                    "LEFT JOIN FETCH i.responsable " +
+                    "LEFT JOIN FETCH i.currentVersion cv " +
+                    "LEFT JOIN FETCH cv.estado " +
+                    "LEFT JOIN FETCH cv.createdBy " +
+                    "WHERE i.id = :id",
+                    Incidencia.class)
+                    .setParameter("id", id)
+                    .getResultList();
+            
+            return resultados.isEmpty() ? null : resultados.get(0);
         } catch (Exception e) {
             throw new DaoException("Error buscando incidencia por id", e);
         }
