@@ -39,6 +39,8 @@ public class IncidenciaDetailPanel extends JPanel {
     private Incidencia incidenciaActual;
     private JComboBox<UserDetailDto> comboResponsable;
     private JComboBox<IncidenciaEstado> comboEstado;
+    private boolean cargandoEstados = false; 
+    private boolean cargandoUsuarios = false; 
 
     public IncidenciaDetailPanel(IncidenciaController incidenciaController,
                                 ComentarioController comentarioController,
@@ -201,19 +203,21 @@ public class IncidenciaDetailPanel extends JPanel {
             }
         });
         
-        // Preseleccionar responsable actual usando el ID pasado como parámetro
+        for (java.awt.event.ActionListener al : comboResponsable.getActionListeners()) {
+            comboResponsable.removeActionListener(al);
+        }
+        
+        comboResponsable.addActionListener(e -> {
+            if (!cargandoUsuarios && comboResponsable.getSelectedItem() != null && incidenciaActual != null) {
+                onResponsableChanged();
+            }
+        });
+        
         if (responsableId != null) {
             loadUsuariosAndSelect(responsableId);
         } else {
             loadUsuarios();
         }
-        
-        // Deshabilitar temporalmente el listener para evitar disparos durante la carga
-        comboResponsable.addActionListener(e -> {
-            if (comboResponsable.getSelectedItem() != null && incidenciaActual != null) {
-                onResponsableChanged();
-            }
-        });
     
         responsablePanel.add(comboResponsable, BorderLayout.CENTER);
         sidebarPanel.add(responsablePanel);
@@ -241,15 +245,17 @@ public class IncidenciaDetailPanel extends JPanel {
             }
         });
         
-        // Preseleccionar estado actual usando el ID pasado como parámetro
-        loadEstadosAndSelect(estadoId);
+        for (java.awt.event.ActionListener al : comboEstado.getActionListeners()) {
+            comboEstado.removeActionListener(al);
+        }
         
-        // Deshabilitar temporalmente el listener para evitar disparos durante la carga
         comboEstado.addActionListener(e -> {
-            if (comboEstado.getSelectedItem() != null && incidenciaActual != null) {
+            if (!cargandoEstados && comboEstado.getSelectedItem() != null && incidenciaActual != null) {
                 onEstadoChanged();
             }
         });
+        
+        loadEstadosAndSelect(estadoId);
     
         estadoPanel.add(comboEstado, BorderLayout.CENTER);
         sidebarPanel.add(estadoPanel);
@@ -288,6 +294,8 @@ public class IncidenciaDetailPanel extends JPanel {
             @Override
             protected void done() {
                 try {
+                    cargandoUsuarios = true; 
+                    
                     List<UserDetailDto> usuarios = get();
                     if (usuarios != null) {
                         comboResponsable.removeAllItems();
@@ -297,7 +305,8 @@ public class IncidenciaDetailPanel extends JPanel {
                         }
                     }
                 } catch (Exception e) {
-                    // Ignorar errores silenciosamente
+                } finally {
+                    cargandoUsuarios = false; 
                 }
             }
         }.execute();
@@ -317,6 +326,8 @@ public class IncidenciaDetailPanel extends JPanel {
             @Override
             protected void done() {
                 try {
+                    cargandoUsuarios = true; 
+                    
                     List<UserDetailDto> usuarios = get();
                     if (usuarios != null && !usuarios.isEmpty()) {
                         comboResponsable.removeAllItems();
@@ -326,17 +337,15 @@ public class IncidenciaDetailPanel extends JPanel {
                             comboResponsable.addItem(usuario);
                             if (usuario.getId() != null && usuario.getId().equals(responsableId)) {
                                 seleccionado = usuario;
-                                System.out.println("[IncidenciaDetailPanel] Usuario responsable encontrado: " + usuario.getEmail());
                             }
                         }
                         if (seleccionado != null) {
                             comboResponsable.setSelectedItem(seleccionado);
                         }
-                    } else {
-                        System.out.println("[IncidenciaDetailPanel] No se pudieron cargar usuarios");
                     }
                 } catch (Exception e) {
-                    // Ignorar errores silenciosamente
+                } finally {
+                    cargandoUsuarios = false;   
                 }
             }
         }.execute();
@@ -358,6 +367,8 @@ public class IncidenciaDetailPanel extends JPanel {
             @Override
             protected void done() {
                 try {
+                    cargandoEstados = true; 
+                    
                     List<IncidenciaEstado> estados = get();
                     if (estados != null && !estados.isEmpty()) {
                         comboEstado.removeAllItems();
@@ -379,6 +390,8 @@ public class IncidenciaDetailPanel extends JPanel {
                         }
                     }
                 } catch (Exception e) {
+                } finally {
+                    cargandoEstados = false; 
                 }
             }
         }.execute();

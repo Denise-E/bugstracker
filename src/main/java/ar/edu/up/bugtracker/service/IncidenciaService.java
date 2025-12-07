@@ -214,8 +214,13 @@ public class IncidenciaService {
         try {
             begin();
 
+            Incidencia incidenciaGestionada = incidenciaDao.findById(id);
+            if (incidenciaGestionada == null) {
+                throw new NotFoundException("Incidencia no encontrada");
+            }
+
             IncidenciaVersion nuevaVersion = new IncidenciaVersion();
-            nuevaVersion.setIncidencia(incidencia);
+            nuevaVersion.setIncidencia(incidenciaGestionada);
             nuevaVersion.setEstado(nuevoEstado);
             nuevaVersion.setCreatedBy(usuario);
 
@@ -227,10 +232,15 @@ public class IncidenciaService {
 
             Long versionId = versionDao.create(nuevaVersion);
 
+            // Asegurar que la nueva versión esté persistida antes de usarla
+            em.flush();
+            
             IncidenciaVersion versionGestionada = versionDao.findById(versionId);
-            incidencia.setCurrentVersion(versionGestionada);
-            incidenciaDao.update(incidencia);
-
+            incidenciaGestionada.setCurrentVersion(versionGestionada);
+            
+            incidenciaDao.update(incidenciaGestionada);
+            
+            em.flush();
             commit();
         } catch (RuntimeException ex) {
             rollbackSilently();
