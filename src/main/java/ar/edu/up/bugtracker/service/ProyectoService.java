@@ -1,7 +1,9 @@
 package ar.edu.up.bugtracker.service;
 
+import ar.edu.up.bugtracker.dao.IncidenciaDao;
 import ar.edu.up.bugtracker.dao.ProyectoDao;
 import ar.edu.up.bugtracker.exceptions.*;
+import ar.edu.up.bugtracker.models.Incidencia;
 import ar.edu.up.bugtracker.models.Proyecto;
 import ar.edu.up.bugtracker.service.dto.UserLoggedInDto;
 import jakarta.persistence.EntityManager;
@@ -11,10 +13,12 @@ import java.util.List;
 public class ProyectoService {
 
     private final ProyectoDao proyectoDao;
+    private final IncidenciaDao incidenciaDao;
     private final EntityManager em;
 
-    public ProyectoService(ProyectoDao proyectoDao, EntityManager em) {
+    public ProyectoService(ProyectoDao proyectoDao, IncidenciaDao incidenciaDao, EntityManager em) {
         this.proyectoDao = proyectoDao;
+        this.incidenciaDao = incidenciaDao;
         this.em = em;
     }
 
@@ -101,24 +105,34 @@ public class ProyectoService {
         try {
             begin();
             
-            int versionesEliminadas = em.createQuery("DELETE FROM IncidenciaVersion iv WHERE iv.incidencia.proyecto.id = :proyectoId")
-                    .setParameter("proyectoId", id)
-                    .executeUpdate();
-            em.flush();
-            em.clear();
+            // 1. Buscar todas las incidencias por ID del proyecto
+            List<Incidencia> incidencias = incidenciaDao.findByProyecto(id);
             
-            int incidenciasEliminadas = em.createQuery("DELETE FROM Incidencia i WHERE i.proyecto.id = :proyectoId")
-                    .setParameter("proyectoId", id)
-                    .executeUpdate();
-            em.flush();
-            em.clear();
-            
-            Proyecto proyectoParaEliminar = proyectoDao.findById(id);
-            if (proyectoParaEliminar == null) {
-                throw new NotFoundException("Proyecto no encontrado");
+            // 2. Para todas las incidencias borrar todos los registros de las tablas "comentario" e "incidencia_version" por incidencia_id
+            for (Incidencia incidencia : incidencias) {
+                Long incidenciaId = incidencia.getId();
+                
+                // Eliminar comentarios por incidencia_id
+                em.createQuery("DELETE FROM Comentario c WHERE c.incidencia.id = :incidenciaId")
+                        .setParameter("incidenciaId", incidenciaId)
+                        .executeUpdate();
+                
+                // Eliminar versiones por incidencia_id
+                em.createQuery("DELETE FROM IncidenciaVersion iv WHERE iv.incidencia.id = :incidenciaId")
+                        .setParameter("incidenciaId", incidenciaId)
+                        .executeUpdate();
             }
+            em.flush();
+            em.clear();
             
-            // Eliminar el proyecto
+            // 3. Borrar las incidencias por proyecto
+            em.createQuery("DELETE FROM Incidencia i WHERE i.proyecto.id = :proyectoId")
+                    .setParameter("proyectoId", id)
+                    .executeUpdate();
+            em.flush();
+            em.clear();
+            
+            // 4. Borrar el proyecto
             proyectoDao.deleteById(id);
             commit();
         } catch (RuntimeException ex) {

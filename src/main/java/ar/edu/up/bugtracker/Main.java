@@ -72,10 +72,10 @@ public class Main {
         UserRoleController roleController = new UserRoleController(perfilService);
 
         ProyectoDao proyectoDao = new ProyectoDao(em);
-        ProyectoService proyectoService = new ProyectoService(proyectoDao, em);
+        IncidenciaDao incidenciaDao = new IncidenciaDao(em);
+        ProyectoService proyectoService = new ProyectoService(proyectoDao, incidenciaDao, em);
         ProyectoController proyectoController = new ProyectoController(proyectoService);
 
-        IncidenciaDao incidenciaDao = new IncidenciaDao(em);
         IncidenciaVersionDao incidenciaVersionDao = new IncidenciaVersionDao(em);
         IncidenciaService incidenciaService = new IncidenciaService(incidenciaDao, incidenciaVersionDao, em);
         IncidenciaController incidenciaController = new IncidenciaController(incidenciaService);

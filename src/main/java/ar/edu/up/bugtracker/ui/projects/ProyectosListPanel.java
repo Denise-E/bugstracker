@@ -70,9 +70,11 @@ public class ProyectosListPanel extends JPanel {
         int actionsCol = tableModel.getColumnCount() - 1;
         table.getColumnModel().getColumn(actionsCol).setCellRenderer(new ActionsRenderer());
         table.getColumnModel().getColumn(actionsCol).setCellEditor(new ActionsEditor());
-        table.getColumnModel().getColumn(actionsCol).setPreferredWidth(160);
+        int accionesWidth = isAdmin ? 200 : 130;
+        table.getColumnModel().getColumn(actionsCol).setPreferredWidth(accionesWidth);
+        table.getColumnModel().getColumn(actionsCol).setResizable(false); 
         
-        int fechaCol = 2; 
+        int fechaCol = 1; 
         table.getColumnModel().getColumn(fechaCol).setPreferredWidth(140);
         table.getColumnModel().getColumn(fechaCol).setMinWidth(120);
         table.getColumnModel().getColumn(fechaCol).setMaxWidth(160);
@@ -122,7 +124,7 @@ public class ProyectosListPanel extends JPanel {
 
     // Tabla
     private static class ProyectosTableModel extends AbstractTableModel {
-        private final String[] cols = {"Nombre", "Descripción", "Creado", "Acciones"};
+        private final String[] cols = {"Nombre", "Creado", "Acciones"};
         private final DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
         private List<Proyecto> data = new ArrayList<>();
 
@@ -159,14 +161,8 @@ public class ProyectosListPanel extends JPanel {
                 case 0:
                     return p.getNombre();
                 case 1:
-                    String desc = p.getDescripcion();
-                    if (desc != null && desc.length() > 50) {
-                        return desc.substring(0, 47) + "...";
-                    }
-                    return desc != null ? desc : "";
-                case 2:
                     return (p.getCreadoEn() != null ? p.getCreadoEn().format(fmt) : "");
-                case 3:
+                case 2:
                     return "ACCIONES";
                 default:
                     return "";
@@ -191,18 +187,21 @@ public class ProyectosListPanel extends JPanel {
 
         public ActionsRenderer() {
             setLayout(new FlowLayout(FlowLayout.RIGHT, 6, 2));
-            add(btnEdit);
-            add(btnView);
-            if (isAdmin) {
-                add(btnDelete);
-            }
             setOpaque(true);
         }
 
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
                                                        boolean hasFocus, int row, int column) {
+            removeAll();
+            add(btnEdit);
+            add(btnView);
+            if (isAdmin) {
+                add(btnDelete);
+            }
             setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
+            revalidate();
+            repaint();
             return this;
         }
     }
@@ -215,12 +214,6 @@ public class ProyectosListPanel extends JPanel {
         private int editingRow = -1;
 
         public ActionsEditor() {
-            panel.add(btnEdit);
-            panel.add(btnView);
-            if (isAdmin) {
-                panel.add(btnDelete);
-            }
-
             btnEdit.addActionListener(e -> {
                 int row = editingRow;
                 stopCellEditing();
@@ -248,7 +241,15 @@ public class ProyectosListPanel extends JPanel {
         @Override
         public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected,
                                                       int row, int column) {
+            panel.removeAll();
+            panel.add(btnEdit);
+            panel.add(btnView);
+            if (isAdmin) {
+                panel.add(btnDelete);
+            }
             editingRow = row;
+            panel.revalidate();
+            panel.repaint();
             return panel;
         }
 

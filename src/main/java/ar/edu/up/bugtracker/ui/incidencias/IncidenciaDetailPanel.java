@@ -168,11 +168,21 @@ public class IncidenciaDetailPanel extends JPanel {
     }
 
     private void populateUI(Incidencia incidencia, Long responsableId, Long estadoId) {
+        this.incidenciaActual = incidencia;
+        
+        if (comentarioTextArea != null) {
+            String placeholder = "Escriba su comentario...";
+            comentarioTextArea.setText(placeholder);
+            comentarioTextArea.setForeground(Color.GRAY);
+        }
+        
         mainContentPanel.removeAll();
         sidebarPanel.removeAll();
 
         buildSidebar(incidencia, responsableId, estadoId);
         buildMainContent(incidencia);
+        
+        loadHistorial(incidencia);
 
         revalidate();
         repaint();
@@ -225,7 +235,7 @@ public class IncidenciaDetailPanel extends JPanel {
         if (responsableId != null) {
             loadUsuariosAndSelect(responsableId);
         } else {
-            loadUsuarios();
+            loadUsuariosAndSelect(null);
         }
     
         responsablePanel.add(comboResponsable, BorderLayout.CENTER);
@@ -338,18 +348,27 @@ public class IncidenciaDetailPanel extends JPanel {
                     cargandoUsuarios = true; 
                     
                     List<UserDetailDto> usuarios = get();
-                    if (usuarios != null && !usuarios.isEmpty()) {
+                    if (usuarios != null) {
                         comboResponsable.removeAllItems();
                         comboResponsable.addItem(null);
+                        
+                        if (usuarios.isEmpty()) {
+                            cargandoUsuarios = false;
+                            return;
+                        }
+                        
                         UserDetailDto seleccionado = null;
                         for (UserDetailDto usuario : usuarios) {
                             comboResponsable.addItem(usuario);
-                            if (usuario.getId() != null && usuario.getId().equals(responsableId)) {
+                            if (responsableId != null && usuario.getId() != null && usuario.getId().equals(responsableId)) {
                                 seleccionado = usuario;
                             }
                         }
+                        
                         if (seleccionado != null) {
                             comboResponsable.setSelectedItem(seleccionado);
+                        } else {
+                            comboResponsable.setSelectedItem(null); // "Sin asignar"
                         }
                     }
                 } catch (Exception e) {
@@ -394,7 +413,7 @@ public class IncidenciaDetailPanel extends JPanel {
                         
                         if (indiceSeleccionado >= 0) {
                             comboEstado.setSelectedIndex(indiceSeleccionado);
-                        } else if (!estados.isEmpty()) {
+                        } else if (!estados.isEmpty() && estadoIdFinal == null) {
                             comboEstado.setSelectedIndex(0);
                         }
                     }
@@ -591,35 +610,30 @@ public class IncidenciaDetailPanel extends JPanel {
             comentarioTextArea.setBorder(new EmptyBorder(5, 5, 5, 5));
         }
         
-        // Pre-llenar con la descripción de la incidencia si existe, sino mostrar placeholder
         String placeholder = "Escriba su comentario...";
-        if (incidencia.getDescripcion() != null && !incidencia.getDescripcion().trim().isEmpty()) {
-            comentarioTextArea.setText(incidencia.getDescripcion());
-            comentarioTextArea.setForeground(Color.BLACK);
-        } else {
-            comentarioTextArea.setText(placeholder);
-            comentarioTextArea.setForeground(Color.GRAY);
-            // Remover listeners anteriores para evitar duplicados
-            for (java.awt.event.FocusListener fl : comentarioTextArea.getFocusListeners()) {
-                comentarioTextArea.removeFocusListener(fl);
-            }
-            comentarioTextArea.addFocusListener(new java.awt.event.FocusAdapter() {
-                @Override
-                public void focusGained(java.awt.event.FocusEvent e) {
-                    if (comentarioTextArea.getText().equals(placeholder)) {
-                        comentarioTextArea.setText("");
-                        comentarioTextArea.setForeground(Color.BLACK);
-                    }
-                }
-                @Override
-                public void focusLost(java.awt.event.FocusEvent e) {
-                    if (comentarioTextArea.getText().trim().isEmpty()) {
-                        comentarioTextArea.setText(placeholder);
-                        comentarioTextArea.setForeground(Color.GRAY);
-                    }
-                }
-            });
+        comentarioTextArea.setText(placeholder);
+        comentarioTextArea.setForeground(Color.GRAY);
+        
+        for (java.awt.event.FocusListener fl : comentarioTextArea.getFocusListeners()) {
+            comentarioTextArea.removeFocusListener(fl);
         }
+        
+        comentarioTextArea.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override
+            public void focusGained(java.awt.event.FocusEvent e) {
+                if (comentarioTextArea.getText().equals(placeholder)) {
+                    comentarioTextArea.setText("");
+                    comentarioTextArea.setForeground(Color.BLACK);
+                }
+            }
+            @Override
+            public void focusLost(java.awt.event.FocusEvent e) {
+                if (comentarioTextArea.getText().trim().isEmpty()) {
+                    comentarioTextArea.setText(placeholder);
+                    comentarioTextArea.setForeground(Color.GRAY);
+                }
+            }
+        });
         
         JScrollPane comentarioScroll = new JScrollPane(comentarioTextArea);
         comentarioScroll.setBorder(new EmptyBorder(5, 0, 5, 0));
@@ -639,10 +653,13 @@ public class IncidenciaDetailPanel extends JPanel {
 
         mainContentPanel.add(centerPanel, BorderLayout.CENTER);
 
-        loadHistorial(incidencia);
     }
 
     private void loadHistorial(Incidencia incidencia) {
+        if (historialPanel == null) {
+            return;
+        }
+        
         new SwingWorker<List<HistorialItem>, Void>() {
             private Exception error;
 
@@ -665,8 +682,7 @@ public class IncidenciaDetailPanel extends JPanel {
                         }
                     }
 
-                    // Ordenar por fecha
-                    items.sort(Comparator.comparing(HistorialItem::getFecha));
+                    items.sort(Comparator.comparing(HistorialItem::getFecha).reversed());
 
                     return items;
                 } catch (Exception ex) {
@@ -684,7 +700,7 @@ public class IncidenciaDetailPanel extends JPanel {
                 }
                 try {
                     List<HistorialItem> items = get();
-                    if (items != null) {
+                    if (items != null && historialPanel != null) {
                         populateHistorial(items);
                     }
                 } catch (Exception e) {
@@ -695,6 +711,9 @@ public class IncidenciaDetailPanel extends JPanel {
     }
 
     private void populateHistorial(List<HistorialItem> items) {
+        if (historialPanel == null) {
+            return; 
+        }
         historialPanel.removeAll();
         
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");

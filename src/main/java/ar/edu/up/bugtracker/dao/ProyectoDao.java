@@ -36,7 +36,7 @@ public class ProyectoDao implements IDao<Proyecto, Long> {
     @Override
     public List<Proyecto> findAll() {
         try {
-            return em.createQuery("SELECT p FROM Proyecto p ORDER BY p.id", Proyecto.class)
+            return em.createQuery("SELECT p FROM Proyecto p ORDER BY p.creadoEn DESC", Proyecto.class)
                     .getResultList();
         } catch (Exception e) {
             throw new DaoException("Error listando proyectos", e);
