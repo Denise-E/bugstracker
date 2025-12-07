@@ -43,6 +43,11 @@ public class ComentarioService {
 
         try {
             begin();
+            Long incidenciaId = comentario.getIncidencia().getId();
+            ar.edu.up.bugtracker.models.Incidencia incidenciaRef = em.getReference(
+                ar.edu.up.bugtracker.models.Incidencia.class, incidenciaId);
+            comentario.setIncidencia(incidenciaRef);
+            
             Long id = comentarioDao.create(comentario);
             commit();
             return id;

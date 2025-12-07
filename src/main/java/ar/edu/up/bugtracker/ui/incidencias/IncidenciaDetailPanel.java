@@ -40,7 +40,12 @@ public class IncidenciaDetailPanel extends JPanel {
     private JComboBox<UserDetailDto> comboResponsable;
     private JComboBox<IncidenciaEstado> comboEstado;
     private boolean cargandoEstados = false; 
-    private boolean cargandoUsuarios = false; 
+    private boolean cargandoUsuarios = false;
+    private JTextField descripcionField;
+    private JButton btnGuardarDescripcion;
+    private String descripcionOriginal;
+    private JTextArea comentarioTextArea;
+    private JButton btnEnviarComentario; 
 
     public IncidenciaDetailPanel(IncidenciaController incidenciaController,
                                 ComentarioController comentarioController,
@@ -137,6 +142,10 @@ public class IncidenciaDetailPanel extends JPanel {
                 try {
                     IncidenciaData data = get();
                     if (data != null && data.incidencia != null) {
+                        // Actualizar descripción original antes de poblar UI
+                        descripcionOriginal = data.incidencia.getDescripcion() != null 
+                            ? data.incidencia.getDescripcion() 
+                            : "";
                         populateUI(data.incidencia, data.responsableId, data.estadoId);
                     }
                 } catch (Exception e) {
@@ -496,6 +505,8 @@ public class IncidenciaDetailPanel extends JPanel {
     }
 
     private void buildMainContent(Incidencia incidencia) {
+        mainContentPanel.removeAll();
+        
         JLabel titleLabel = new JLabel("Incidencia #" + incidencia.getId());
         titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 20f));
         titleLabel.setBorder(new EmptyBorder(0, 0, 10, 0));
@@ -510,13 +521,41 @@ public class IncidenciaDetailPanel extends JPanel {
         descripcionLabel.setFont(descripcionLabel.getFont().deriveFont(Font.BOLD));
         descripcionPanel.add(descripcionLabel, BorderLayout.NORTH);
         
-        JTextArea descripcionText = new JTextArea(incidencia.getDescripcion() != null ? incidencia.getDescripcion() : "");
-        descripcionText.setEditable(false);
-        descripcionText.setLineWrap(true);
-        descripcionText.setWrapStyleWord(true);
-        descripcionText.setBackground(getBackground());
-        descripcionText.setBorder(new EmptyBorder(5, 0, 0, 0));
-        descripcionPanel.add(descripcionText, BorderLayout.CENTER);
+        if (descripcionOriginal == null) {
+            descripcionOriginal = incidencia.getDescripcion() != null ? incidencia.getDescripcion() : "";
+        }
+        
+        if (descripcionField == null) {
+            descripcionField = new JTextField(descripcionOriginal);
+            descripcionField.setBorder(new EmptyBorder(5, 5, 5, 5));
+            descripcionField.addCaretListener(e -> {
+                // Habilitar botón si hay cambios
+                String textoActual = descripcionField.getText();
+                boolean hayCambios = !textoActual.equals(descripcionOriginal);
+                if (btnGuardarDescripcion != null) {
+                    btnGuardarDescripcion.setEnabled(hayCambios);
+                }
+            });
+        } else {
+            descripcionField.setText(descripcionOriginal);
+            if (btnGuardarDescripcion != null) {
+                btnGuardarDescripcion.setEnabled(false);
+            }
+        }
+        descripcionPanel.add(descripcionField, BorderLayout.CENTER);
+        
+        if (btnGuardarDescripcion == null) {
+            btnGuardarDescripcion = new JButton("Guardar");
+            btnGuardarDescripcion.setPreferredSize(new Dimension(100, 30));
+            btnGuardarDescripcion.addActionListener(e -> guardarDescripcion());
+        }
+        btnGuardarDescripcion.setEnabled(false);
+        
+        JPanel botonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        botonPanel.setBorder(new EmptyBorder(5, 0, 0, 0));
+        botonPanel.add(btnGuardarDescripcion);
+        descripcionPanel.add(botonPanel, BorderLayout.SOUTH);
+        
         centerPanel.add(descripcionPanel);
 
         JLabel historialLabel = new JLabel("Historial:");
@@ -532,6 +571,67 @@ public class IncidenciaDetailPanel extends JPanel {
         historialScroll.setBorder(new EmptyBorder(0, 0, 0, 0));
         historialScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         centerPanel.add(historialScroll);
+
+        // Panel de comentarios
+        JPanel comentariosPanel = new JPanel(new BorderLayout());
+        comentariosPanel.setBorder(new EmptyBorder(20, 0, 0, 0));
+        
+        JLabel comentariosLabel = new JLabel("Agregar comentario:");
+        comentariosLabel.setFont(comentariosLabel.getFont().deriveFont(Font.BOLD));
+        comentariosPanel.add(comentariosLabel, BorderLayout.NORTH);
+        
+        if (comentarioTextArea == null) {
+            comentarioTextArea = new JTextArea(5, 0);
+            comentarioTextArea.setLineWrap(true);
+            comentarioTextArea.setWrapStyleWord(true);
+            comentarioTextArea.setBorder(new EmptyBorder(5, 5, 5, 5));
+        }
+        
+        // Pre-llenar con la descripción de la incidencia si existe, sino mostrar placeholder
+        String placeholder = "Escriba su comentario...";
+        if (incidencia.getDescripcion() != null && !incidencia.getDescripcion().trim().isEmpty()) {
+            comentarioTextArea.setText(incidencia.getDescripcion());
+            comentarioTextArea.setForeground(Color.BLACK);
+        } else {
+            comentarioTextArea.setText(placeholder);
+            comentarioTextArea.setForeground(Color.GRAY);
+            // Remover listeners anteriores para evitar duplicados
+            for (java.awt.event.FocusListener fl : comentarioTextArea.getFocusListeners()) {
+                comentarioTextArea.removeFocusListener(fl);
+            }
+            comentarioTextArea.addFocusListener(new java.awt.event.FocusAdapter() {
+                @Override
+                public void focusGained(java.awt.event.FocusEvent e) {
+                    if (comentarioTextArea.getText().equals(placeholder)) {
+                        comentarioTextArea.setText("");
+                        comentarioTextArea.setForeground(Color.BLACK);
+                    }
+                }
+                @Override
+                public void focusLost(java.awt.event.FocusEvent e) {
+                    if (comentarioTextArea.getText().trim().isEmpty()) {
+                        comentarioTextArea.setText(placeholder);
+                        comentarioTextArea.setForeground(Color.GRAY);
+                    }
+                }
+            });
+        }
+        
+        JScrollPane comentarioScroll = new JScrollPane(comentarioTextArea);
+        comentarioScroll.setBorder(new EmptyBorder(5, 0, 5, 0));
+        comentariosPanel.add(comentarioScroll, BorderLayout.CENTER);
+        
+        if (btnEnviarComentario == null) {
+            btnEnviarComentario = new JButton("Enviar");
+            btnEnviarComentario.setPreferredSize(new Dimension(100, 30));
+            btnEnviarComentario.addActionListener(e -> enviarComentario());
+        }
+        
+        JPanel botonComentarioPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        botonComentarioPanel.add(btnEnviarComentario);
+        comentariosPanel.add(botonComentarioPanel, BorderLayout.SOUTH);
+        
+        centerPanel.add(comentariosPanel);
 
         mainContentPanel.add(centerPanel, BorderLayout.CENTER);
 
@@ -678,6 +778,92 @@ public class IncidenciaDetailPanel extends JPanel {
         LocalDateTime getFecha() {
             return fecha;
         }
+    }
+
+    private void guardarDescripcion() {
+        String nuevaDescripcion = descripcionField.getText();
+        
+        new SwingWorker<Void, Void>() {
+            private Exception error;
+
+            @Override
+            protected Void doInBackground() {
+                try {
+                    Incidencia incidenciaUpdate = new Incidencia();
+                    incidenciaUpdate.setDescripcion(nuevaDescripcion);
+                    incidenciaController.update(incidenciaId, incidenciaUpdate);
+                    return null;
+                } catch (Exception ex) {
+                    this.error = ex;
+                    return null;
+                }
+            }
+
+            @Override
+            protected void done() {
+                if (error != null) {
+                    JOptionPane.showMessageDialog(IncidenciaDetailPanel.this,
+                            "Error al actualizar descripción: " + error.getMessage());
+                    // Restaurar valor original
+                    descripcionField.setText(descripcionOriginal);
+                    btnGuardarDescripcion.setEnabled(false);
+                    return;
+                }
+                // Actualizar descripción original y deshabilitar botón
+                descripcionOriginal = nuevaDescripcion;
+                btnGuardarDescripcion.setEnabled(false);
+            }
+        }.execute();
+    }
+
+    private void enviarComentario() {
+        String textoComentario = comentarioTextArea.getText().trim();
+        String placeholder = "Escriba su comentario...";
+        
+        // Validar que no esté vacío o sea solo el placeholder
+        if (textoComentario.isEmpty() || textoComentario.equals(placeholder)) {
+            JOptionPane.showMessageDialog(IncidenciaDetailPanel.this,
+                    "Por favor ingrese un comentario antes de enviar.");
+            return;
+        }
+
+        new SwingWorker<Void, Void>() {
+            private Exception error;
+
+            @Override
+            protected Void doInBackground() {
+                try {
+                    Comentario comentario = new Comentario();
+                    // Usar la incidencia actual que ya tiene el ID correcto
+                    // El servicio se encargará de obtener la referencia gestionada correcta usando em.getReference()
+                    comentario.setIncidencia(incidenciaActual);
+                    comentario.setTexto(textoComentario);
+                    
+                    comentarioController.create(comentario, currentUser);
+                    return null;
+                } catch (Exception ex) {
+                    this.error = ex;
+                    return null;
+                }
+            }
+
+            @Override
+            protected void done() {
+                if (error != null) {
+                    JOptionPane.showMessageDialog(IncidenciaDetailPanel.this,
+                            "Error al enviar comentario: " + error.getMessage());
+                    return;
+                }
+                // Limpiar campo y mostrar placeholder
+                comentarioTextArea.setText(placeholder);
+                comentarioTextArea.setForeground(Color.GRAY);
+                // Remover focus para que el placeholder se muestre correctamente
+                comentarioTextArea.setFocusable(false);
+                comentarioTextArea.setFocusable(true);
+                // Recargar historial para mostrar el nuevo comentario
+                loadHistorial(incidenciaActual);
+            }
+        }.execute();
     }
 }
 
