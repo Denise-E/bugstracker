@@ -84,12 +84,35 @@ public class UserService {
     }
 
     public List<UserDetailDto> getAll() {
-        try {
-            return usuarioDao.findAll().stream()
-                    .map(this::toDetailDto)
-                    .collect(Collectors.toList());
-        }catch (RuntimeException ex) {
-            throw new AppException("Error obteniendo lista de usuarios ", ex);
+        synchronized (em) {
+            try {
+                boolean transactionStarted = !em.getTransaction().isActive();
+                if (transactionStarted) {
+                    em.getTransaction().begin();
+                }
+                
+                List<Usuario> usuarios = usuarioDao.findAll();
+                
+                if (usuarios != null) {
+                    for (Usuario u : usuarios) {
+                        if (u.getPerfil() != null) {
+                            u.getPerfil().getId();
+                            u.getPerfil().getNombre();
+                        }
+                    }
+                }
+                
+                em.flush();
+                
+                List<UserDetailDto> result = usuarios.stream()
+                        .map(this::toDetailDto)
+                        .collect(Collectors.toList());
+                
+                return result;
+            } catch (RuntimeException ex) {
+                rollbackSilently();
+                throw new AppException("Error obteniendo lista de usuarios ", ex);
+            }
         }
     }
 

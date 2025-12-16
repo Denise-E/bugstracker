@@ -39,7 +39,10 @@ public class UserDao implements IDao<Usuario, Long> {
     @Override
     public List<Usuario> findAll() {
         try {
-            return em.createQuery("SELECT u FROM Usuario u ORDER BY u.id", Usuario.class)
+            return em.createQuery(
+                    "SELECT DISTINCT u FROM Usuario u " +
+                    "LEFT JOIN FETCH u.perfil " +
+                    "ORDER BY u.id", Usuario.class)
                     .getResultList();
         } catch (Exception e) {
             throw new DaoException("Error listando usuarios", e);

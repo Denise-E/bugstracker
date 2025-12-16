@@ -58,10 +58,42 @@ public class ComentarioService {
     }
 
     public List<Comentario> findByIncidencia(Long incidenciaId) {
-        try {
-            return comentarioDao.findByIncidencia(incidenciaId);
-        } catch (RuntimeException ex) {
-            throw new AppException("Error obteniendo comentarios de la incidencia", ex);
+        synchronized (em) {
+            try {
+                em.clear(); // Limpiar el caché para asegurar datos actualizados
+                
+                boolean transactionStarted = !em.getTransaction().isActive();
+                if (transactionStarted) {
+                    em.getTransaction().begin();
+                }
+                
+                List<Comentario> comentarios = comentarioDao.findByIncidencia(incidenciaId);
+                
+                // Traer las relaciones 
+                if (comentarios != null) {
+                    for (Comentario comentario : comentarios) {
+                        comentario.getId();
+                        comentario.getTexto();
+                        comentario.getCreatedAt();
+                        if (comentario.getIncidencia() != null) {
+                            comentario.getIncidencia().getId();
+                        }
+                        if (comentario.getCreatedBy() != null) {
+                            comentario.getCreatedBy().getId();
+                            comentario.getCreatedBy().getNombre();
+                            comentario.getCreatedBy().getApellido();
+                            comentario.getCreatedBy().getEmail();
+                        }
+                    }
+                }
+                
+                em.flush(); // Asegurar que las operaciones pendientes se completen
+                
+                return comentarios;
+            } catch (RuntimeException ex) {
+                rollbackSilently();
+                throw new AppException("Error obteniendo comentarios de la incidencia", ex);
+            }
         }
     }
 

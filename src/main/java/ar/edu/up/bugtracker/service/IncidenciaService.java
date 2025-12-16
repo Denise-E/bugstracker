@@ -108,6 +108,8 @@ public class IncidenciaService {
         // Sincronizar el acceso al EntityManager para evitar problemas con múltiples threads
         synchronized (em) {
             try {
+                em.clear();
+                
                 boolean transactionStarted = !em.getTransaction().isActive();
                 if (transactionStarted) {
                     em.getTransaction().begin();
@@ -153,28 +155,56 @@ public class IncidenciaService {
             throw new ValidationException("La incidencia no puede ser nula");
         }
 
-        Incidencia existente = incidenciaDao.findById(id);
-        if (existente == null) {
-            throw new NotFoundException("Incidencia no encontrada");
-        }
-
-        if (!isBlank(incidencia.getDescripcion())) {
-            existente.setDescripcion(incidencia.getDescripcion());
-        }
-        if (incidencia.getEstimacionHoras() != null) {
-            existente.setEstimacionHoras(incidencia.getEstimacionHoras());
-        }
-        if (incidencia.getResponsable() != null && incidencia.getResponsable().getId() != null) {
-            Usuario responsable = em.find(Usuario.class, incidencia.getResponsable().getId());
-            existente.setResponsable(responsable);
-        } else {
-            existente.setResponsable(null);
-        }
-
         try {
             begin();
+            
+            // Obtener la incidencia para asegurar que todas las relaciones estén cargadas
+            Incidencia existente = incidenciaDao.findById(id);
+            if (existente == null) {
+                throw new NotFoundException("Incidencia no encontrada");
+            }
+
+            // Guardar el currentVersion antes de hacer cambios
+            IncidenciaVersion currentVersionPreservado = existente.getCurrentVersion();
+            
+            // Materializar el estado del currentVersion
+            if (currentVersionPreservado != null && currentVersionPreservado.getEstado() != null) {
+                currentVersionPreservado.getEstado().getId();
+                currentVersionPreservado.getEstado().getNombre();
+            }
+
+            // Actualizar solo los campos que se proporcionan
+            boolean actualizarDescripcion = !isBlank(incidencia.getDescripcion());
+            boolean actualizarEstimacion = incidencia.getEstimacionHoras() != null;
+            boolean actualizarResponsable = incidencia.getResponsable() != null || 
+                    (incidencia.getResponsable() == null && !actualizarDescripcion && !actualizarEstimacion);
+            
+            if (actualizarDescripcion) {
+                existente.setDescripcion(incidencia.getDescripcion());
+            }
+            if (actualizarEstimacion) {
+                existente.setEstimacionHoras(incidencia.getEstimacionHoras());
+            }
+            
+            if (actualizarResponsable) {
+                if (incidencia.getResponsable() != null && incidencia.getResponsable().getId() != null) {
+                    Usuario responsable = em.find(Usuario.class, incidencia.getResponsable().getId());
+                    existente.setResponsable(responsable);
+                } else {
+                    existente.setResponsable(null);
+                }
+            }
+            
+            // Asegurar que el currentVersion se mantenga siempre
+            if (currentVersionPreservado != null) {
+                existente.setCurrentVersion(currentVersionPreservado);
+            }
+            
             incidenciaDao.update(existente);
             commit();
+        } catch (NotFoundException ex) {
+            rollbackSilently();
+            throw ex;
         } catch (RuntimeException ex) {
             rollbackSilently();
             throw new AppException("Error actualizando incidencia", ex);
@@ -252,6 +282,8 @@ public class IncidenciaService {
         // Sincronizar el acceso al EntityManager para evitar problemas con múltiples threads
         synchronized (em) {
             try {
+                em.clear();
+                
                 boolean transactionStarted = !em.getTransaction().isActive();
                 if (transactionStarted) {
                     em.getTransaction().begin();
