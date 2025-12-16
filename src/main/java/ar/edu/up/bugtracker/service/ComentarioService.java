@@ -51,6 +51,9 @@ public class ComentarioService {
             Long id = comentarioDao.create(comentario);
             commit();
             return id;
+        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException ex) {
+            rollbackSilently();
+            throw ex;
         } catch (RuntimeException ex) {
             rollbackSilently();
             throw new AppException("Error creando comentario", ex);
@@ -90,6 +93,8 @@ public class ComentarioService {
                 em.flush(); // Asegurar que las operaciones pendientes se completen
                 
                 return comentarios;
+            } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+                throw ex;
             } catch (RuntimeException ex) {
                 rollbackSilently();
                 throw new AppException("Error obteniendo comentarios de la incidencia", ex);
@@ -104,7 +109,7 @@ public class ComentarioService {
                 throw new NotFoundException("Comentario no encontrado");
             }
             return comentario;
-        } catch (NotFoundException ex) {
+        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
             throw ex;
         } catch (RuntimeException ex) {
             throw new AppException("Error obteniendo comentario", ex);
@@ -138,6 +143,9 @@ public class ComentarioService {
             begin();
             comentarioDao.update(comentario);
             commit();
+        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+            rollbackSilently();
+            throw ex;
         } catch (RuntimeException ex) {
             rollbackSilently();
             throw new AppException("Error actualizando comentario", ex);
@@ -165,6 +173,9 @@ public class ComentarioService {
             begin();
             comentarioDao.deleteById(id);
             commit();
+        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+            rollbackSilently();
+            throw ex;
         } catch (RuntimeException ex) {
             rollbackSilently();
             throw new AppException("Error eliminando comentario", ex);

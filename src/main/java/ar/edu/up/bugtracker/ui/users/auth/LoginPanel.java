@@ -4,6 +4,7 @@ import ar.edu.up.bugtracker.controller.UserController;
 import ar.edu.up.bugtracker.service.cmd.UserLoginCmd;
 import ar.edu.up.bugtracker.service.dto.UserLoggedInDto;
 import ar.edu.up.bugtracker.ui.PanelManager;
+import ar.edu.up.bugtracker.ui.components.ExceptionHandler;
 import ar.edu.up.bugtracker.ui.components.SwingWorkerFactory;
 
 import javax.swing.*;
@@ -108,9 +109,10 @@ public class LoginPanel extends JPanel {
                 }
             },
             error -> {
-                String msg = error.getCause() != null ? error.getCause().getMessage() : error.getMessage();
-                if (msg == null || msg.isBlank()) msg = "Credenciales inválidas";
-                JOptionPane.showMessageDialog(LoginPanel.this, msg);
+                String message = ExceptionHandler.getErrorMessage(error);
+                String title = ExceptionHandler.getErrorTitle(error);
+                int messageType = ExceptionHandler.getMessageType(error);
+                JOptionPane.showMessageDialog(LoginPanel.this, message, title, messageType);
             }
         ).execute();
     }

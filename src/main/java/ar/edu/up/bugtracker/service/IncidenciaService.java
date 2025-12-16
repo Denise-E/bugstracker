@@ -82,6 +82,9 @@ public class IncidenciaService {
 
             commit();
             return incidenciaId;
+        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+            rollbackSilently();
+            throw ex;
         } catch (RuntimeException ex) {
             rollbackSilently();
             throw new AppException("Error creando incidencia", ex);
@@ -91,6 +94,8 @@ public class IncidenciaService {
     public List<Incidencia> getAll() {
         try {
             return incidenciaDao.findAll();
+        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+            throw ex;
         } catch (RuntimeException ex) {
             throw new AppException("Error obteniendo lista de incidencias", ex);
         }
@@ -99,6 +104,8 @@ public class IncidenciaService {
     public List<Incidencia> findByProyecto(Long proyectoId) {
         try {
             return incidenciaDao.findByProyecto(proyectoId);
+        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+            throw ex;
         } catch (RuntimeException ex) {
             throw new AppException("Error obteniendo incidencias del proyecto", ex);
         }
@@ -141,7 +148,7 @@ public class IncidenciaService {
                 em.flush(); 
                 
                 return incidencia;
-            } catch (NotFoundException ex) {
+            } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
                 throw ex;
             } catch (RuntimeException ex) {
                 rollbackSilently();
@@ -202,7 +209,7 @@ public class IncidenciaService {
             
             incidenciaDao.update(existente);
             commit();
-        } catch (NotFoundException ex) {
+        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
             rollbackSilently();
             throw ex;
         } catch (RuntimeException ex) {
@@ -272,6 +279,9 @@ public class IncidenciaService {
             
             em.flush();
             commit();
+        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException ex) {
+            rollbackSilently();
+            throw ex;
         } catch (RuntimeException ex) {
             rollbackSilently();
             throw new AppException("Error cambiando estado de la incidencia", ex);
@@ -309,6 +319,8 @@ public class IncidenciaService {
                 em.flush(); 
                 
                 return versiones;
+            } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+                throw ex;
             } catch (RuntimeException ex) {
                 rollbackSilently();
                 throw new AppException("Error obteniendo historial de versiones", ex);
@@ -340,6 +352,8 @@ public class IncidenciaService {
                 em.flush(); 
                 
                 return estados;
+            } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+                throw ex;
             } catch (RuntimeException ex) {
                 rollbackSilently();
                 throw new AppException("Error obteniendo lista de estados", ex);
@@ -354,7 +368,7 @@ public class IncidenciaService {
                 throw new NotFoundException("Estado no encontrado");
             }
             return estado;
-        } catch (NotFoundException ex) {
+        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
             throw ex;
         } catch (RuntimeException ex) {
             throw new AppException("Error obteniendo estado", ex);
@@ -387,6 +401,9 @@ public class IncidenciaService {
             // Eliminar la incidencia
             incidenciaDao.deleteById(id);
             commit();
+        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+            rollbackSilently();
+            throw ex;
         } catch (RuntimeException ex) {
             rollbackSilently();
             throw new AppException("Error eliminando incidencia", ex);

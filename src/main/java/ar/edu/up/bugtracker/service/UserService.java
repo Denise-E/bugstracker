@@ -58,6 +58,9 @@ public class UserService {
             Long id = usuarioDao.create(u);
             commit();
             return id;
+        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException ex) {
+            rollbackSilently();
+            throw ex;
         } catch (RuntimeException ex) {
             rollbackSilently();
             throw new AppException("Error registrando al usuario: ", ex);
@@ -78,7 +81,9 @@ public class UserService {
             if (!ok) throw new AuthException("Credenciales inválidas");
 
             return toLoggedInDto(u);
-        }catch (RuntimeException ex) {
+        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException ex) {
+            throw ex;
+        } catch (RuntimeException ex) {
             throw new AppException("Error logueando al usuario: ", ex);
         }
     }
@@ -109,6 +114,8 @@ public class UserService {
                         .collect(Collectors.toList());
                 
                 return result;
+            } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+                throw ex;
             } catch (RuntimeException ex) {
                 rollbackSilently();
                 throw new AppException("Error obteniendo lista de usuarios ", ex);
@@ -121,7 +128,9 @@ public class UserService {
             Usuario u = usuarioDao.findById(id);
             if (u == null) throw new NotFoundException("Usuario no encontrado");
             return toDetailDto(u);
-        }catch (RuntimeException ex) {
+        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+            throw ex;
+        } catch (RuntimeException ex) {
             throw new AppException("Error obteniendo detalle del usuario: ", ex);
         }
     }
@@ -150,6 +159,9 @@ public class UserService {
             begin();
             usuarioDao.update(u);
             commit();
+        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException ex) {
+            rollbackSilently();
+            throw ex;
         } catch (RuntimeException ex) {
             rollbackSilently();
             throw new AppException("Error actualizando al usuario: ", ex);
@@ -164,6 +176,9 @@ public class UserService {
             begin();
             usuarioDao.deleteById(id);
             commit();
+        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException ex) {
+            rollbackSilently();
+            throw ex;
         } catch (RuntimeException ex) {
             rollbackSilently();
             throw new AppException("Error eliminando al usuario: ", ex);

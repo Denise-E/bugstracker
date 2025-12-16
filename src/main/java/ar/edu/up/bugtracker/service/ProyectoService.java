@@ -38,6 +38,9 @@ public class ProyectoService {
             Long id = proyectoDao.create(proyecto);
             commit();
             return id;
+        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+            rollbackSilently();
+            throw ex;
         } catch (RuntimeException ex) {
             rollbackSilently();
             throw new AppException("Error creando proyecto: ", ex);
@@ -47,6 +50,8 @@ public class ProyectoService {
     public List<Proyecto> getAll() {
         try {
             return proyectoDao.findAll();
+        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+            throw ex;
         } catch (RuntimeException ex) {
             throw new AppException("Error obteniendo lista de proyectos", ex);
         }
@@ -59,7 +64,7 @@ public class ProyectoService {
                 throw new NotFoundException("Proyecto no encontrado");
             }
             return proyecto;
-        } catch (NotFoundException ex) {
+        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
             throw ex;
         } catch (RuntimeException ex) {
             throw new AppException("Error obteniendo detalle del proyecto", ex);
@@ -88,6 +93,9 @@ public class ProyectoService {
             begin();
             proyectoDao.update(existente);
             commit();
+        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+            rollbackSilently();
+            throw ex;
         } catch (RuntimeException ex) {
             rollbackSilently();
             throw new AppException("Error actualizando proyecto", ex);
@@ -135,6 +143,9 @@ public class ProyectoService {
             // 4. Borrar el proyecto
             proyectoDao.deleteById(id);
             commit();
+        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+            rollbackSilently();
+            throw ex;
         } catch (RuntimeException ex) {
             rollbackSilently();
             throw new AppException("Error eliminando proyecto", ex);
