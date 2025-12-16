@@ -4,20 +4,19 @@ import ar.edu.up.bugtracker.controller.ComentarioController;
 import ar.edu.up.bugtracker.controller.IncidenciaController;
 import ar.edu.up.bugtracker.controller.ProyectoController;
 import ar.edu.up.bugtracker.controller.UserController;
-import ar.edu.up.bugtracker.exceptions.ForbiddenException;
 import ar.edu.up.bugtracker.exceptions.NotFoundException;
 import ar.edu.up.bugtracker.models.Incidencia;
 import ar.edu.up.bugtracker.models.Proyecto;
 import ar.edu.up.bugtracker.service.dto.UserLoggedInDto;
+import ar.edu.up.bugtracker.ui.components.SwingWorkerFactory;
+import ar.edu.up.bugtracker.ui.components.tables.ActionButtonsEditor;
+import ar.edu.up.bugtracker.ui.components.tables.ActionButtonsRenderer;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.AbstractTableModel;
-import javax.swing.table.TableCellEditor;
-import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.EventObject;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -157,8 +156,24 @@ public class ProyectoDetailPanel extends JPanel {
         table.getColumnModel().getColumn(0).setPreferredWidth(500);
 
         int actionsCol = tableModel.getColumnCount() - 1;
-        table.getColumnModel().getColumn(actionsCol).setCellRenderer(new ActionsRenderer());
-        table.getColumnModel().getColumn(actionsCol).setCellEditor(new ActionsEditor());
+        
+        // Botones
+        List<String> buttonLabels = new ArrayList<>();
+        List<java.util.function.IntConsumer> actions = new ArrayList<>();
+        
+        buttonLabels.add("Ver");
+        actions.add(this::onViewRow);
+        
+        if (isAdmin) {
+            buttonLabels.add("Eliminar");
+            actions.add(this::onDeleteRow);
+        }
+        
+        ActionButtonsRenderer renderer = new ActionButtonsRenderer(buttonLabels, FlowLayout.CENTER);
+        ActionButtonsEditor editor = new ActionButtonsEditor(buttonLabels, actions, FlowLayout.CENTER);
+        
+        table.getColumnModel().getColumn(actionsCol).setCellRenderer(renderer);
+        table.getColumnModel().getColumn(actionsCol).setCellEditor(editor);
         table.getColumnModel().getColumn(actionsCol).setPreferredWidth(120);
     }
 
@@ -237,34 +252,11 @@ public class ProyectoDetailPanel extends JPanel {
     }
 
     private void loadIncidencias() {
-        new SwingWorker<List<Incidencia>, Void>() {
-            private Exception error;
-
-            @Override
-            protected List<Incidencia> doInBackground() {
-                try {
-                    return incidenciaController.findByProyecto(proyectoId);
-                } catch (Exception ex) {
-                    this.error = ex;
-                    return null;
-                }
-            }
-
-            @Override
-            protected void done() {
-                if (error != null) {
-                    JOptionPane.showMessageDialog(ProyectoDetailPanel.this,
-                            "Error al cargar incidencias: " + error.getMessage());
-                    return;
-                }
-                try {
-                    List<Incidencia> incidencias = get();
-                    tableModel.setData(incidencias != null ? incidencias : new ArrayList<>());
-                } catch (Exception e) {
-                    JOptionPane.showMessageDialog(ProyectoDetailPanel.this, "Error inesperado.");
-                }
-            }
-        }.execute();
+        SwingWorkerFactory.createWithAutoErrorHandling(
+            this,
+            () -> incidenciaController.findByProyecto(proyectoId),
+            incidencias -> tableModel.setData(incidencias != null ? incidencias : new ArrayList<>())
+        ).execute();
     }
 
     // Tabla de incidencias
@@ -322,83 +314,6 @@ public class ProyectoDetailPanel extends JPanel {
         }
     }
 
-    private class ActionsRenderer extends JPanel implements TableCellRenderer {
-        private final JButton btnView = new JButton("Ver");
-        private final JButton btnDelete = new JButton("Eliminar");
-
-        public ActionsRenderer() {
-            setLayout(new FlowLayout(FlowLayout.CENTER, 4, 2));
-            btnView.setToolTipText("Ver detalle");
-            btnView.setFont(btnView.getFont().deriveFont(12f));
-            btnView.setMargin(new Insets(2, 8, 2, 8));
-            add(btnView);
-            
-            if (isAdmin) {
-                btnDelete.setToolTipText("Eliminar");
-                btnDelete.setFont(btnDelete.getFont().deriveFont(12f));
-                btnDelete.setMargin(new Insets(2, 8, 2, 8));
-                add(btnDelete);
-            }
-            setOpaque(true);
-        }
-
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-                                                       boolean hasFocus, int row, int column) {
-            setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
-            return this;
-        }
-    }
-
-    private class ActionsEditor extends AbstractCellEditor implements TableCellEditor {
-        private final JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 4, 2));
-        private final JButton btnView = new JButton("Ver");
-        private final JButton btnDelete = new JButton("Eliminar");
-        private int editingRow = -1;
-
-        public ActionsEditor() {
-            btnView.setToolTipText("Ver detalle");
-            btnView.setFont(btnView.getFont().deriveFont(12f));
-            btnView.setMargin(new Insets(2, 8, 2, 8));
-            panel.add(btnView);
-            
-            if (isAdmin) {
-                btnDelete.setToolTipText("Eliminar");
-                btnDelete.setFont(btnDelete.getFont().deriveFont(12f));
-                btnDelete.setMargin(new Insets(2, 8, 2, 8));
-                panel.add(btnDelete);
-            }
-
-            btnView.addActionListener(e -> {
-                int row = editingRow;
-                stopCellEditing();
-                onViewRow(row);
-            });
-
-            btnDelete.addActionListener(e -> {
-                int row = editingRow;
-                stopCellEditing();
-                onDeleteRow(row);
-            });
-        }
-
-        @Override
-        public boolean isCellEditable(EventObject e) {
-            return true;
-        }
-
-        @Override
-        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected,
-                                                      int row, int column) {
-            editingRow = row;
-            return panel;
-        }
-
-        @Override
-        public Object getCellEditorValue() {
-            return null;
-        }
-    }
 
     private void onViewRow(int row) {
         Incidencia incidencia = tableModel.getAt(row);
@@ -425,43 +340,14 @@ public class ProyectoDetailPanel extends JPanel {
         );
         if (opt != JOptionPane.YES_OPTION) return;
 
-        new SwingWorker<Void, Void>() {
-            private Exception error;
-
-            @Override
-            protected Void doInBackground() {
-                System.out.println("[ProyectoDetailPanel] Iniciando eliminación de incidencia con ID: " + incidencia.getId());
-                try {
-                    incidenciaController.delete(incidencia.getId());
-                    System.out.println("[ProyectoDetailPanel] Incidencia eliminada exitosamente");
-                    return null;
-                } catch (Exception ex) {
-                    System.out.println("[ProyectoDetailPanel] ERROR durante la eliminación:");
-                    System.out.println("[ProyectoDetailPanel] Tipo: " + ex.getClass().getName());
-                    System.out.println("[ProyectoDetailPanel] Mensaje: " + ex.getMessage());
-                    System.out.println("[ProyectoDetailPanel] Stack trace:");
-                    ex.printStackTrace();
-                    this.error = ex;
-                    return null;
-                }
-            }
-
-            @Override
-            protected void done() {
-                if (error != null) {
-                    String msg;
-                    if (error instanceof NotFoundException) {
-                        msg = "Incidencia no encontrada.";
-                    } else {
-                        msg = "Error al eliminar: " + error.getMessage();
-                    }
-                    JOptionPane.showMessageDialog(ProyectoDetailPanel.this, msg);
-                    return;
-                }
+        SwingWorkerFactory.createVoidWithAutoErrorHandling(
+            this,
+            () -> incidenciaController.delete(incidencia.getId()),
+            () -> {
                 JOptionPane.showMessageDialog(ProyectoDetailPanel.this, "Incidencia eliminada.");
                 loadIncidencias();
             }
-        }.execute();
+        ).execute();
     }
 }
 

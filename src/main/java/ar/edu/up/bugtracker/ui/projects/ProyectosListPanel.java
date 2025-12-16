@@ -1,20 +1,19 @@
 package ar.edu.up.bugtracker.ui.projects;
 
 import ar.edu.up.bugtracker.controller.ProyectoController;
-import ar.edu.up.bugtracker.exceptions.ForbiddenException;
-import ar.edu.up.bugtracker.exceptions.NotFoundException;
 import ar.edu.up.bugtracker.models.Proyecto;
 import ar.edu.up.bugtracker.service.dto.UserLoggedInDto;
+import ar.edu.up.bugtracker.ui.components.SwingWorkerFactory;
+import ar.edu.up.bugtracker.ui.components.tables.ActionButtonsEditor;
+import ar.edu.up.bugtracker.ui.components.tables.ActionButtonsRenderer;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.AbstractTableModel;
-import javax.swing.table.TableCellEditor;
-import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.EventObject;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -68,8 +67,27 @@ public class ProyectosListPanel extends JPanel {
         table.setFillsViewportHeight(true);
 
         int actionsCol = tableModel.getColumnCount() - 1;
-        table.getColumnModel().getColumn(actionsCol).setCellRenderer(new ActionsRenderer());
-        table.getColumnModel().getColumn(actionsCol).setCellEditor(new ActionsEditor());
+        
+        // Botones
+        List<String> buttonLabels = new ArrayList<>();
+        List<java.util.function.IntConsumer> actions = new ArrayList<>();
+        
+        buttonLabels.add("Editar");
+        actions.add(this::onEditRow);
+        
+        buttonLabels.add("Ver");
+        actions.add(this::onViewRow);
+        
+        if (isAdmin) {
+            buttonLabels.add("Eliminar");
+            actions.add(this::onDeleteRow);
+        }
+        
+        ActionButtonsRenderer renderer = new ActionButtonsRenderer(buttonLabels, FlowLayout.RIGHT);
+        ActionButtonsEditor editor = new ActionButtonsEditor(buttonLabels, actions, FlowLayout.RIGHT);
+        
+        table.getColumnModel().getColumn(actionsCol).setCellRenderer(renderer);
+        table.getColumnModel().getColumn(actionsCol).setCellEditor(editor);
         int accionesWidth = isAdmin ? 200 : 130;
         table.getColumnModel().getColumn(actionsCol).setPreferredWidth(accionesWidth);
         table.getColumnModel().getColumn(actionsCol).setResizable(false); 
@@ -92,34 +110,11 @@ public class ProyectosListPanel extends JPanel {
     }
 
     private void refresh() {
-        new SwingWorker<List<Proyecto>, Void>() {
-            private Exception error;
-
-            @Override
-            protected List<Proyecto> doInBackground() {
-                try {
-                    return controller.getAll();
-                } catch (Exception ex) {
-                    this.error = ex;
-                    return null;
-                }
-            }
-
-            @Override
-            protected void done() {
-                if (error != null) {
-                    JOptionPane.showMessageDialog(ProyectosListPanel.this,
-                            "Error al cargar proyectos: " + error.getMessage());
-                    return;
-                }
-                try {
-                    List<Proyecto> proyectos = get();
-                    tableModel.setData(proyectos != null ? proyectos : new ArrayList<>());
-                } catch (Exception e) {
-                    JOptionPane.showMessageDialog(ProyectosListPanel.this, "Error inesperado.");
-                }
-            }
-        }.execute();
+        SwingWorkerFactory.createWithAutoErrorHandling(
+            this,
+            () -> controller.getAll(),
+            proyectos -> tableModel.setData(proyectos != null ? proyectos : new ArrayList<>())
+        ).execute();
     }
 
     // Tabla
@@ -180,84 +175,6 @@ public class ProyectosListPanel extends JPanel {
         }
     }
 
-    private class ActionsRenderer extends JPanel implements TableCellRenderer {
-        private final JButton btnEdit = new JButton("Editar");
-        private final JButton btnView = new JButton("Ver");
-        private final JButton btnDelete = new JButton("Eliminar");
-
-        public ActionsRenderer() {
-            setLayout(new FlowLayout(FlowLayout.RIGHT, 6, 2));
-            setOpaque(true);
-        }
-
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-                                                       boolean hasFocus, int row, int column) {
-            removeAll();
-            add(btnEdit);
-            add(btnView);
-            if (isAdmin) {
-                add(btnDelete);
-            }
-            setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
-            revalidate();
-            repaint();
-            return this;
-        }
-    }
-
-    private class ActionsEditor extends AbstractCellEditor implements TableCellEditor {
-        private final JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 2));
-        private final JButton btnEdit = new JButton("Editar");
-        private final JButton btnView = new JButton("Ver");
-        private final JButton btnDelete = new JButton("Eliminar");
-        private int editingRow = -1;
-
-        public ActionsEditor() {
-            btnEdit.addActionListener(e -> {
-                int row = editingRow;
-                stopCellEditing();
-                onEditRow(row);
-            });
-
-            btnView.addActionListener(e -> {
-                int row = editingRow;
-                stopCellEditing();
-                onViewRow(row);
-            });
-
-            btnDelete.addActionListener(e -> {
-                int row = editingRow;
-                stopCellEditing();
-                onDeleteRow(row);
-            });
-        }
-
-        @Override
-        public boolean isCellEditable(EventObject e) {
-            return true;
-        }
-
-        @Override
-        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected,
-                                                      int row, int column) {
-            panel.removeAll();
-            panel.add(btnEdit);
-            panel.add(btnView);
-            if (isAdmin) {
-                panel.add(btnDelete);
-            }
-            editingRow = row;
-            panel.revalidate();
-            panel.repaint();
-            return panel;
-        }
-
-        @Override
-        public Object getCellEditorValue() {
-            return null;
-        }
-    }
 
     // Acciones de cada fila
     private void onEditRow(int row) {
@@ -300,38 +217,14 @@ public class ProyectosListPanel extends JPanel {
         );
         if (opt != JOptionPane.YES_OPTION) return;
 
-        new SwingWorker<Void, Void>() {
-            private Exception error;
-
-            @Override
-            protected Void doInBackground() {
-                try {
-                    controller.delete(proyecto.getId(), currentUser);
-                    return null;
-                } catch (Exception ex) {
-                    this.error = ex;
-                    return null;
-                }
-            }
-
-            @Override
-            protected void done() {
-                if (error != null) {
-                    String msg;
-                    if (error instanceof ForbiddenException) {
-                        msg = "No tenés permisos para eliminar proyectos.";
-                    } else if (error instanceof NotFoundException) {
-                        msg = "Proyecto no encontrado.";
-                    } else {
-                        msg = "Error al eliminar: " + error.getMessage();
-                    }
-                    JOptionPane.showMessageDialog(ProyectosListPanel.this, msg);
-                    return;
-                }
+        SwingWorkerFactory.createVoidWithAutoErrorHandling(
+            this,
+            () -> controller.delete(proyecto.getId(), currentUser),
+            () -> {
                 JOptionPane.showMessageDialog(ProyectosListPanel.this, "Proyecto eliminado.");
                 refresh();
             }
-        }.execute();
+        ).execute();
     }
 }
 
