@@ -1,11 +1,11 @@
 package ar.edu.up.bugtracker.ui.users;
 
 import ar.edu.up.bugtracker.controller.UserController;
-import ar.edu.up.bugtracker.exceptions.ValidationException;
 import ar.edu.up.bugtracker.service.cmd.UserUpdateCmd;
 import ar.edu.up.bugtracker.service.dto.UserDetailDto;
 import ar.edu.up.bugtracker.service.dto.UserLoggedInDto;
 import ar.edu.up.bugtracker.ui.PanelManager;
+import ar.edu.up.bugtracker.ui.components.SwingWorkerFactory;
 
 import javax.swing.*;
 import java.awt.*;
@@ -98,26 +98,18 @@ public class MiPerfilPanel extends JPanel {
             return;
         }
 
-        new SwingWorker<Void, Void>() {
-            private Exception error;
-            @Override protected Void doInBackground() {
-                try {
-                    UserUpdateCmd cmd = new UserUpdateCmd();
-                    cmd.setNombre(nombre);
-                    cmd.setApellido(apellido);
-                    controller.update(session.getId(), cmd);
-                    return null;
-                } catch (Exception ex) { this.error = ex; return null; }
-            }
-            @Override protected void done() {
-                if (error != null) {
-                    String msg = (error instanceof ValidationException) ? error.getMessage() : "Error al guardar cambios.";
-                    JOptionPane.showMessageDialog(MiPerfilPanel.this, msg);
-                    return;
-                }
+        SwingWorkerFactory.createVoidWithAutoErrorHandling(
+            this,
+            () -> {
+                UserUpdateCmd cmd = new UserUpdateCmd();
+                cmd.setNombre(nombre);
+                cmd.setApellido(apellido);
+                controller.update(session.getId(), cmd);
+            },
+            () -> {
                 JOptionPane.showMessageDialog(MiPerfilPanel.this, "Perfil actualizado.");
                 loadData();
             }
-        }.execute();
+        ).execute();
     }
 }

@@ -1,11 +1,9 @@
 package ar.edu.up.bugtracker.ui.projects;
 
 import ar.edu.up.bugtracker.controller.ProyectoController;
-import ar.edu.up.bugtracker.exceptions.ForbiddenException;
-import ar.edu.up.bugtracker.exceptions.NotFoundException;
-import ar.edu.up.bugtracker.exceptions.ValidationException;
 import ar.edu.up.bugtracker.models.Proyecto;
 import ar.edu.up.bugtracker.service.dto.UserLoggedInDto;
+import ar.edu.up.bugtracker.ui.components.SwingWorkerFactory;
 
 import javax.swing.*;
 import java.awt.*;
@@ -105,47 +103,19 @@ public class ProyectoDialog extends JDialog {
         txtNombre.setEnabled(false);
         txtDescripcion.setEnabled(false);
 
-        new SwingWorker<Proyecto, Void>() {
-            private Exception error;
-
-            @Override
-            protected Proyecto doInBackground() {
-                try {
-                    return controller.getById(proyectoId);
-                } catch (Exception ex) {
-                    this.error = ex;
-                    return null;
+        SwingWorkerFactory.createWithAutoErrorHandling(
+            this,
+            () -> controller.getById(proyectoId),
+            proyecto -> {
+                if (proyecto != null) {
+                    txtNombre.setText(proyecto.getNombre() != null ? proyecto.getNombre() : "");
+                    txtDescripcion.setText(proyecto.getDescripcion() != null ? proyecto.getDescripcion() : "");
                 }
+                txtNombre.setEnabled(true);
+                txtDescripcion.setEnabled(true);
+                btnOk.setEnabled(true);
             }
-
-            @Override
-            protected void done() {
-                if (error != null) {
-                    String msg;
-                    if (error instanceof NotFoundException) {
-                        msg = "Proyecto no encontrado.";
-                    } else {
-                        msg = "Error al cargar proyecto: " + error.getMessage();
-                    }
-                    JOptionPane.showMessageDialog(ProyectoDialog.this, msg);
-                    dispose();
-                    return;
-                }
-                try {
-                    Proyecto proyecto = get();
-                    if (proyecto != null) {
-                        txtNombre.setText(proyecto.getNombre() != null ? proyecto.getNombre() : "");
-                        txtDescripcion.setText(proyecto.getDescripcion() != null ? proyecto.getDescripcion() : "");
-                    }
-                    txtNombre.setEnabled(true);
-                    txtDescripcion.setEnabled(true);
-                    btnOk.setEnabled(true);
-                } catch (Exception e) {
-                    JOptionPane.showMessageDialog(ProyectoDialog.this, "Error inesperado.");
-                    dispose();
-                }
-            }
-        }.execute();
+        ).execute();
     }
 
     private void doSave() {
@@ -164,49 +134,23 @@ public class ProyectoDialog extends JDialog {
 
         btnOk.setEnabled(false);
 
-        new SwingWorker<Void, Void>() {
-            private Exception error;
-
-            @Override
-            protected Void doInBackground() {
-                try {
-                    if (proyectoId == null) {
-                        // Crear
-                        controller.create(proyecto, currentUser);
-                    } else {
-                        // Actualizar
-                        controller.update(proyectoId, proyecto);
-                    }
-                    return null;
-                } catch (Exception ex) {
-                    this.error = ex;
-                    return null;
+        SwingWorkerFactory.createVoidWithAutoErrorHandling(
+            this,
+            () -> {
+                if (proyectoId == null) {
+                    controller.create(proyecto, currentUser);
+                } else {
+                    controller.update(proyectoId, proyecto);
                 }
-            }
-
-            @Override
-            protected void done() {
+            },
+            () -> {
                 btnOk.setEnabled(true);
-                if (error != null) {
-                    String msg;
-                    if (error instanceof ForbiddenException) {
-                        msg = "No tenés permisos para realizar esta acción.";
-                    } else if (error instanceof ValidationException) {
-                        msg = error.getMessage();
-                    } else if (error instanceof NotFoundException) {
-                        msg = "Proyecto no encontrado.";
-                    } else {
-                        msg = "Error guardando proyecto: " + error.getMessage();
-                    }
-                    JOptionPane.showMessageDialog(ProyectoDialog.this, msg);
-                    return;
-                }
                 JOptionPane.showMessageDialog(ProyectoDialog.this,
                         proyectoId == null ? "Proyecto creado exitosamente." : "Cambios guardados.");
                 if (onSaved != null) onSaved.run();
                 dispose();
             }
-        }.execute();
+        ).execute();
     }
 }
 

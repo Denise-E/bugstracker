@@ -3,7 +3,6 @@ package ar.edu.up.bugtracker.ui.incidencias;
 import ar.edu.up.bugtracker.controller.ComentarioController;
 import ar.edu.up.bugtracker.controller.IncidenciaController;
 import ar.edu.up.bugtracker.controller.UserController;
-import ar.edu.up.bugtracker.exceptions.NotFoundException;
 import ar.edu.up.bugtracker.models.Comentario;
 import ar.edu.up.bugtracker.models.Incidencia;
 import ar.edu.up.bugtracker.models.IncidenciaEstado;
@@ -11,6 +10,7 @@ import ar.edu.up.bugtracker.models.IncidenciaVersion;
 import ar.edu.up.bugtracker.models.Usuario;
 import ar.edu.up.bugtracker.service.dto.UserDetailDto;
 import ar.edu.up.bugtracker.service.dto.UserLoggedInDto;
+import ar.edu.up.bugtracker.ui.components.SwingWorkerFactory;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -99,60 +99,37 @@ public class IncidenciaDetailPanel extends JPanel {
     }
 
     private void loadIncidencia() {
-        new SwingWorker<IncidenciaData, Void>() {
-            private Exception error;
-
-            @Override
-            protected IncidenciaData doInBackground() {
-                try {
-                    Incidencia incidencia = incidenciaController.getById(incidenciaId);
-                    if (incidencia == null) {
-                        return null;
-                    }
-                    
-                    // Extraer todos los IDs necesarios ANTES de que la sesión se cierre
-                    // Esto evita el error "Operation not allowed after ResultSet closed"
-                    Long responsableId = null;
-                    if (incidencia.getResponsable() != null) {
-                        responsableId = incidencia.getResponsable().getId();
-                    }
-                    
-                    Long estadoId = null;
-                    if (incidencia.getCurrentVersion() != null && 
-                        incidencia.getCurrentVersion().getEstado() != null) {
-                        estadoId = incidencia.getCurrentVersion().getEstado().getId();
-                    }
-                    
-                    return new IncidenciaData(incidencia, responsableId, estadoId);
-                } catch (Exception ex) {
-                    this.error = ex;
+        SwingWorkerFactory.createWithAutoErrorHandling(
+            this,
+            () -> {
+                Incidencia incidencia = incidenciaController.getById(incidenciaId);
+                if (incidencia == null) {
                     return null;
                 }
-            }
-
-            @Override
-            protected void done() {
-                if (error != null) {
-                    String msg = (error instanceof NotFoundException) 
-                            ? "Incidencia no encontrada." 
-                            : "Error al cargar incidencia: " + error.getMessage();
-                    JOptionPane.showMessageDialog(IncidenciaDetailPanel.this, msg);
-                    return;
+                
+                // Extraer todos los IDs necesarios ANTES de que la sesión se cierre para evita el error "Operation not allowed after ResultSet closed"
+                Long responsableId = null;
+                if (incidencia.getResponsable() != null) {
+                    responsableId = incidencia.getResponsable().getId();
                 }
-                try {
-                    IncidenciaData data = get();
-                    if (data != null && data.incidencia != null) {
-                        // Actualizar descripción original antes de poblar UI
-                        descripcionOriginal = data.incidencia.getDescripcion() != null 
-                            ? data.incidencia.getDescripcion() 
-                            : "";
-                        populateUI(data.incidencia, data.responsableId, data.estadoId);
-                    }
-                } catch (Exception e) {
-                    JOptionPane.showMessageDialog(IncidenciaDetailPanel.this, "Error inesperado.");
+                
+                Long estadoId = null;
+                if (incidencia.getCurrentVersion() != null && 
+                    incidencia.getCurrentVersion().getEstado() != null) {
+                    estadoId = incidencia.getCurrentVersion().getEstado().getId();
+                }
+                
+                return new IncidenciaData(incidencia, responsableId, estadoId);
+            },
+            data -> {
+                if (data != null && data.incidencia != null) {
+                    descripcionOriginal = data.incidencia.getDescripcion() != null 
+                        ? data.incidencia.getDescripcion() 
+                        : "";
+                    populateUI(data.incidencia, data.responsableId, data.estadoId);
                 }
             }
-        }.execute();
+        ).execute();
     }
     
     private static class IncidenciaData {
@@ -300,22 +277,11 @@ public class IncidenciaDetailPanel extends JPanel {
     }
 
     private void loadUsuarios() {
-        new SwingWorker<List<UserDetailDto>, Void>() {
-            @Override
-            protected List<UserDetailDto> doInBackground() {
+        SwingWorkerFactory.create(
+            () -> userController.getAll(),
+            usuarios -> {
+                cargandoUsuarios = true;
                 try {
-                    return userController.getAll();
-                } catch (Exception ex) {
-                    return null;
-                }
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    cargandoUsuarios = true; 
-                    
-                    List<UserDetailDto> usuarios = get();
                     if (usuarios != null) {
                         comboResponsable.removeAllItems();
                         comboResponsable.addItem(null);
@@ -323,31 +289,22 @@ public class IncidenciaDetailPanel extends JPanel {
                             comboResponsable.addItem(usuario);
                         }
                     }
-                } catch (Exception e) {
                 } finally {
-                    cargandoUsuarios = false; 
+                    cargandoUsuarios = false;
                 }
+            },
+            error -> {
+                cargandoUsuarios = false;
             }
-        }.execute();
+        ).execute();
     }
 
     private void loadUsuariosAndSelect(Long responsableId) {
-        new SwingWorker<List<UserDetailDto>, Void>() {
-            @Override
-            protected List<UserDetailDto> doInBackground() {
+        SwingWorkerFactory.create(
+            () -> userController.getAll(),
+            usuarios -> {
+                cargandoUsuarios = true;
                 try {
-                    return userController.getAll();
-                } catch (Exception ex) {
-                    return null;
-                }
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    cargandoUsuarios = true; 
-                    
-                    List<UserDetailDto> usuarios = get();
                     if (usuarios != null) {
                         comboResponsable.removeAllItems();
                         comboResponsable.addItem(null);
@@ -371,33 +328,22 @@ public class IncidenciaDetailPanel extends JPanel {
                             comboResponsable.setSelectedItem(null); // "Sin asignar"
                         }
                     }
-                } catch (Exception e) {
                 } finally {
-                    cargandoUsuarios = false;   
+                    cargandoUsuarios = false;
                 }
+            },
+            error -> {
+                cargandoUsuarios = false;
             }
-        }.execute();
+        ).execute();
     }
 
     private void loadEstadosAndSelect(Long estadoId) {
-        final Long estadoIdFinal = estadoId;
-        
-        new SwingWorker<List<IncidenciaEstado>, Void>() {
-            @Override
-            protected List<IncidenciaEstado> doInBackground() {
+        SwingWorkerFactory.create(
+            () -> incidenciaController.getAllEstados(),
+            estados -> {
+                cargandoEstados = true;
                 try {
-                    return incidenciaController.getAllEstados();
-                } catch (Exception ex) {
-                    return null;
-                }
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    cargandoEstados = true; 
-                    
-                    List<IncidenciaEstado> estados = get();
                     if (estados != null && !estados.isEmpty()) {
                         comboEstado.removeAllItems();
                         int indiceSeleccionado = -1;
@@ -405,7 +351,7 @@ public class IncidenciaDetailPanel extends JPanel {
                         
                         for (IncidenciaEstado estado : estados) {
                             comboEstado.addItem(estado);
-                            if (estadoIdFinal != null && estado.getId() != null && estadoIdFinal.equals(estado.getId())) {
+                            if (estadoId != null && estado.getId() != null && estadoId.equals(estado.getId())) {
                                 indiceSeleccionado = indice;
                             }
                             indice++;
@@ -413,16 +359,18 @@ public class IncidenciaDetailPanel extends JPanel {
                         
                         if (indiceSeleccionado >= 0) {
                             comboEstado.setSelectedIndex(indiceSeleccionado);
-                        } else if (!estados.isEmpty() && estadoIdFinal == null) {
+                        } else if (!estados.isEmpty() && estadoId == null) {
                             comboEstado.setSelectedIndex(0);
                         }
                     }
-                } catch (Exception e) {
                 } finally {
-                    cargandoEstados = false; 
+                    cargandoEstados = false;
                 }
+            },
+            error -> {
+                cargandoEstados = false;
             }
-        }.execute();
+        ).execute();
     }
 
     private void onResponsableChanged() {
@@ -441,41 +389,21 @@ public class IncidenciaDetailPanel extends JPanel {
             return; // No cambió
         }
 
-        new SwingWorker<Void, Void>() {
-            private Exception error;
-
-            @Override
-            protected Void doInBackground() {
-                try {
-                    Incidencia incidenciaUpdate = new Incidencia();
-                    if (nuevoResponsableId != null) {
-                        Usuario responsable = new Usuario();
-                        responsable.setId(nuevoResponsableId);
-                        incidenciaUpdate.setResponsable(responsable);
-                    } else {
-                        incidenciaUpdate.setResponsable(null);
-                    }
-                    incidenciaController.update(incidenciaId, incidenciaUpdate);
-                    return null;
-                } catch (Exception ex) {
-                    this.error = ex;
-                    return null;
+        SwingWorkerFactory.createVoidWithAutoErrorHandling(
+            this,
+            () -> {
+                Incidencia incidenciaUpdate = new Incidencia();
+                if (nuevoResponsableId != null) {
+                    Usuario responsable = new Usuario();
+                    responsable.setId(nuevoResponsableId);
+                    incidenciaUpdate.setResponsable(responsable);
+                } else {
+                    incidenciaUpdate.setResponsable(null);
                 }
-            }
-
-            @Override
-            protected void done() {
-                if (error != null) {
-                    JOptionPane.showMessageDialog(IncidenciaDetailPanel.this,
-                            "Error al actualizar responsable: " + error.getMessage());
-                    // Recargar para restaurar el valor anterior
-                    loadIncidencia();
-                    return;
-                }
-                // Recargar incidencia y historial
-                loadIncidencia();
-            }
-        }.execute();
+                incidenciaController.update(incidenciaId, incidenciaUpdate);
+            },
+            () -> loadIncidencia() // Recargar incidencia e historial
+        ).execute();
     }
 
     private void onEstadoChanged() {
@@ -494,33 +422,11 @@ public class IncidenciaDetailPanel extends JPanel {
             return; // No cambió
         }
 
-        new SwingWorker<Void, Void>() {
-            private Exception error;
-
-            @Override
-            protected Void doInBackground() {
-                try {
-                    incidenciaController.cambiarEstado(incidenciaId, nuevoEstado.getId(), currentUser);
-                    return null;
-                } catch (Exception ex) {
-                    this.error = ex;
-                    return null;
-                }
-            }
-
-            @Override
-            protected void done() {
-                if (error != null) {
-                    JOptionPane.showMessageDialog(IncidenciaDetailPanel.this,
-                            "Error al cambiar estado: " + error.getMessage());
-                    // Recargar para restaurar el valor anterior
-                    loadIncidencia();
-                    return;
-                }
-                // Recargar incidencia y historial
-                loadIncidencia();
-            }
-        }.execute();
+        SwingWorkerFactory.createVoidWithAutoErrorHandling(
+            this,
+            () -> incidenciaController.cambiarEstado(incidenciaId, nuevoEstado.getId(), currentUser),
+            () -> loadIncidencia() // Recargar incidencia e historial
+        ).execute();
     }
 
     private void buildMainContent(Incidencia incidencia) {
@@ -660,54 +566,34 @@ public class IncidenciaDetailPanel extends JPanel {
             return;
         }
         
-        new SwingWorker<List<HistorialItem>, Void>() {
-            private Exception error;
-
-            @Override
-            protected List<HistorialItem> doInBackground() {
-                try {
-                    List<IncidenciaVersion> versiones = incidenciaController.getHistorialVersiones(incidenciaId);
-                    List<Comentario> comentarios = comentarioController.findByIncidencia(incidenciaId);
-                    List<HistorialItem> items = new ArrayList<>();
-                    
-                    if (versiones != null) {
-                        for (IncidenciaVersion version : versiones) {
-                            items.add(new HistorialItem(version.getCreatedAt(), version, null));
-                        }
+        SwingWorkerFactory.createWithAutoErrorHandling(
+            this,
+            () -> {
+                List<IncidenciaVersion> versiones = incidenciaController.getHistorialVersiones(incidenciaId);
+                List<Comentario> comentarios = comentarioController.findByIncidencia(incidenciaId);
+                List<HistorialItem> items = new ArrayList<>();
+                
+                if (versiones != null) {
+                    for (IncidenciaVersion version : versiones) {
+                        items.add(new HistorialItem(version.getCreatedAt(), version, null));
                     }
-                    
-                    if (comentarios != null) {
-                        for (Comentario comentario : comentarios) {
-                            items.add(new HistorialItem(comentario.getCreatedAt(), null, comentario));
-                        }
+                }
+                
+                if (comentarios != null) {
+                    for (Comentario comentario : comentarios) {
+                        items.add(new HistorialItem(comentario.getCreatedAt(), null, comentario));
                     }
+                }
 
-                    items.sort(Comparator.comparing(HistorialItem::getFecha).reversed());
-
-                    return items;
-                } catch (Exception ex) {
-                    this.error = ex;
-                    return null;
+                items.sort(Comparator.comparing(HistorialItem::getFecha).reversed());
+                return items;
+            },
+            items -> {
+                if (items != null && historialPanel != null) {
+                    populateHistorial(items);
                 }
             }
-
-            @Override
-            protected void done() {
-                if (error != null) {
-                    JOptionPane.showMessageDialog(IncidenciaDetailPanel.this,
-                            "Error al cargar historial: " + error.getMessage());
-                    return;
-                }
-                try {
-                    List<HistorialItem> items = get();
-                    if (items != null && historialPanel != null) {
-                        populateHistorial(items);
-                    }
-                } catch (Exception e) {
-                    JOptionPane.showMessageDialog(IncidenciaDetailPanel.this, "Error inesperado.");
-                }
-            }
-        }.execute();
+        ).execute();
     }
 
     private void populateHistorial(List<HistorialItem> items) {
@@ -806,37 +692,19 @@ public class IncidenciaDetailPanel extends JPanel {
     private void guardarDescripcion() {
         String nuevaDescripcion = descripcionField.getText();
         
-        new SwingWorker<Void, Void>() {
-            private Exception error;
-
-            @Override
-            protected Void doInBackground() {
-                try {
-                    Incidencia incidenciaUpdate = new Incidencia();
-                    incidenciaUpdate.setDescripcion(nuevaDescripcion);
-                    incidenciaController.update(incidenciaId, incidenciaUpdate);
-                    return null;
-                } catch (Exception ex) {
-                    this.error = ex;
-                    return null;
-                }
-            }
-
-            @Override
-            protected void done() {
-                if (error != null) {
-                    JOptionPane.showMessageDialog(IncidenciaDetailPanel.this,
-                            "Error al actualizar descripción: " + error.getMessage());
-                    // Restaurar valor original
-                    descripcionField.setText(descripcionOriginal);
-                    btnGuardarDescripcion.setEnabled(false);
-                    return;
-                }
+        SwingWorkerFactory.createVoidWithAutoErrorHandling(
+            this,
+            () -> {
+                Incidencia incidenciaUpdate = new Incidencia();
+                incidenciaUpdate.setDescripcion(nuevaDescripcion);
+                incidenciaController.update(incidenciaId, incidenciaUpdate);
+            },
+            () -> {
                 // Actualizar descripción original y deshabilitar botón
                 descripcionOriginal = nuevaDescripcion;
                 btnGuardarDescripcion.setEnabled(false);
             }
-        }.execute();
+        ).execute();
     }
 
     private void enviarComentario() {
@@ -850,37 +718,22 @@ public class IncidenciaDetailPanel extends JPanel {
             return;
         }
 
-        new SwingWorker<Void, Void>() {
-            private Exception error;
-
-            @Override
-            protected Void doInBackground() {
-                try {
-                    Comentario comentario = new Comentario();
-                    Incidencia incidenciaRef = new Incidencia() {
-                        @Override
-                        public Long getId() {
-                            return incidenciaId;
-                        }
-                    };
-                    comentario.setIncidencia(incidenciaRef);
-                    comentario.setTexto(textoComentario);
-                    
-                    comentarioController.create(comentario, currentUser);
-                    return null;
-                } catch (Exception ex) {
-                    this.error = ex;
-                    return null;
-                }
-            }
-
-            @Override
-            protected void done() {
-                if (error != null) {
-                    JOptionPane.showMessageDialog(IncidenciaDetailPanel.this,
-                            "Error al enviar comentario: " + error.getMessage());
-                    return;
-                }
+        SwingWorkerFactory.createVoidWithAutoErrorHandling(
+            this,
+            () -> {
+                Comentario comentario = new Comentario();
+                Incidencia incidenciaRef = new Incidencia() {
+                    @Override
+                    public Long getId() {
+                        return incidenciaId;
+                    }
+                };
+                comentario.setIncidencia(incidenciaRef);
+                comentario.setTexto(textoComentario);
+                
+                comentarioController.create(comentario, currentUser);
+            },
+            () -> {
                 // Limpiar campo y mostrar placeholder
                 comentarioTextArea.setText(placeholder);
                 comentarioTextArea.setForeground(Color.GRAY);
@@ -890,7 +743,7 @@ public class IncidenciaDetailPanel extends JPanel {
                 // Recargar historial para mostrar el nuevo comentario
                 loadHistorial(incidenciaActual);
             }
-        }.execute();
+        ).execute();
     }
 }
 

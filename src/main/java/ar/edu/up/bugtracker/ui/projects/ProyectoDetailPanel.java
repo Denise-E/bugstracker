@@ -178,39 +178,17 @@ public class ProyectoDetailPanel extends JPanel {
     }
 
     private void loadProyecto() {
-        new SwingWorker<Proyecto, Void>() {
-            private Exception error;
-
-            @Override
-            protected Proyecto doInBackground() {
-                try {
-                    return proyectoController.getById(proyectoId);
-                } catch (Exception ex) {
-                    this.error = ex;
-                    return null;
+        SwingWorkerFactory.createWithAutoErrorHandling(
+            this,
+            () -> proyectoController.getById(proyectoId),
+            proyecto -> {
+                this.proyecto = proyecto;
+                if (proyecto != null) {
+                    updateTitle();
+                    loadIncidencias();
                 }
             }
-
-            @Override
-            protected void done() {
-                if (error != null) {
-                    String msg = (error instanceof NotFoundException)
-                            ? "Proyecto no encontrado."
-                            : "Error al cargar proyecto: " + error.getMessage();
-                    JOptionPane.showMessageDialog(ProyectoDetailPanel.this, msg);
-                    return;
-                }
-                try {
-                    proyecto = get();
-                    if (proyecto != null) {
-                        updateTitle();
-                        loadIncidencias();
-                    }
-                } catch (Exception e) {
-                    JOptionPane.showMessageDialog(ProyectoDetailPanel.this, "Error inesperado.");
-                }
-            }
-        }.execute();
+        ).execute();
     }
 
     private void updateTitle() {

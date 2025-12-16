@@ -2,9 +2,9 @@ package ar.edu.up.bugtracker.ui.users;
 
 import ar.edu.up.bugtracker.controller.UserController;
 import ar.edu.up.bugtracker.controller.UserRoleController;
-import ar.edu.up.bugtracker.exceptions.ValidationException;
 import ar.edu.up.bugtracker.models.PerfilUsuario;
 import ar.edu.up.bugtracker.service.cmd.UserUpdateCmd;
+import ar.edu.up.bugtracker.ui.components.SwingWorkerFactory;
 
 import javax.swing.*;
 import javax.swing.plaf.basic.BasicComboBoxRenderer;
@@ -18,7 +18,6 @@ public class UpdateUsuarioDialog extends JDialog {
     private final Long userId;
     private final Runnable onSaved;
 
-    // NUEVO: datos de la fila (no del usuario logueado)
     private final Long initialPerfilId;
     private final String initialPerfilName;
 
@@ -85,72 +84,59 @@ public class UpdateUsuarioDialog extends JDialog {
 
     // Carga roles (solo roles) y preselecciona usando los datos de la fila
     private void loadRolesAsyncAndPreselect() {
-        new SwingWorker<List<PerfilUsuario>, Void>() {
-            private Exception error;
-            @Override protected List<PerfilUsuario> doInBackground() {
-                try {
-                    return roleController.getAll();
-                } catch (Exception ex) { this.error = ex; return null; }
-            }
-            @Override protected void done() {
-                if (error != null) {
-                    System.out.println("[UpdateUsuarioDialog] ERROR cargando roles: " + error);
-                    lblRolesHint.setText("No se pudieron cargar roles. Intentalo nuevamente.");
-                    return;
+        SwingWorkerFactory.create(
+            () -> roleController.getAll(),
+            roles -> {
+                System.out.println("[UpdateUsuarioDialog] userId=" + userId);
+                System.out.println("[UpdateUsuarioDialog] Roles recibidos:");
+                if (roles != null) {
+                    for (PerfilUsuario p : roles) {
+                        System.out.println("  - id=" + p.getId() + " nombre=" + p.getNombre());
+                    }
+                } else {
+                    System.out.println("  (sin roles)");
                 }
-                try {
-                    List<PerfilUsuario> roles = get();
+                System.out.println("[UpdateUsuarioDialog] Valor inicial desde la fila: perfilId="
+                        + initialPerfilId + " perfilName=" + initialPerfilName);
 
-                    System.out.println("[UpdateUsuarioDialog] userId=" + userId);
-                    System.out.println("[UpdateUsuarioDialog] Roles recibidos:");
-                    if (roles != null) {
-                        for (PerfilUsuario p : roles) {
-                            System.out.println("  - id=" + p.getId() + " nombre=" + p.getNombre());
-                        }
-                    } else {
-                        System.out.println("  (sin roles)");
-                    }
-                    System.out.println("[UpdateUsuarioDialog] Valor inicial desde la fila: perfilId="
-                            + initialPerfilId + " perfilName=" + initialPerfilName);
+                DefaultComboBoxModel<PerfilUsuario> model = new DefaultComboBoxModel<>();
+                if (roles != null) for (PerfilUsuario p : roles) model.addElement(p);
+                cbPerfil.setModel(model);
 
-                    DefaultComboBoxModel<PerfilUsuario> model = new DefaultComboBoxModel<>();
-                    if (roles != null) for (PerfilUsuario p : roles) model.addElement(p);
-                    cbPerfil.setModel(model);
+                boolean selected = false;
 
-                    boolean selected = false;
-
-                    // Primero, si vino ID desde la fila
-                    if (initialPerfilId != null) {
-                        selected = selectRoleById(initialPerfilId);
-                        System.out.println("[UpdateUsuarioDialog] selectRoleById(" + initialPerfilId + ") => " + selected);
-                    }
-
-                    // Si no se pudo por ID y vino nombre desde la fila
-                    if (!selected && initialPerfilName != null && !initialPerfilName.trim().isEmpty()) {
-                        selected = selectRoleByName(initialPerfilName.trim());
-                        System.out.println("[UpdateUsuarioDialog] selectRoleByName(" + initialPerfilName + ") => " + selected);
-                    }
-
-                    // Sin fallback: si no hay match, dejamos sin selección
-                    if (!selected) {
-                        cbPerfil.setSelectedItem(null);
-                        System.out.println("[UpdateUsuarioDialog] Sin coincidencia -> combo sin selección.");
-                    }
-
-                    boolean hasItems = cbPerfil.getItemCount() > 0;
-                    cbPerfil.setEnabled(hasItems);
-                    btnOk.setEnabled(hasItems);
-                    lblRolesHint.setText(hasItems ? " " : "No hay roles configurados. Contactá al administrador.");
-
-                    PerfilUsuario sel = (PerfilUsuario) cbPerfil.getSelectedItem();
-                    System.out.println("[UpdateUsuarioDialog] Selección final: " +
-                            (sel == null ? "null" : ("id=" + sel.getId() + " nombre=" + sel.getNombre())));
-                } catch (Exception e) {
-                    System.out.println("[UpdateUsuarioDialog] ERROR preparando pantalla: " + e);
-                    lblRolesHint.setText("Error inesperado al preparar la pantalla.");
+                // Primero, si vino ID desde la fila
+                if (initialPerfilId != null) {
+                    selected = selectRoleById(initialPerfilId);
+                    System.out.println("[UpdateUsuarioDialog] selectRoleById(" + initialPerfilId + ") => " + selected);
                 }
+
+                // Si no se pudo por ID y vino nombre desde la fila
+                if (!selected && initialPerfilName != null && !initialPerfilName.trim().isEmpty()) {
+                    selected = selectRoleByName(initialPerfilName.trim());
+                    System.out.println("[UpdateUsuarioDialog] selectRoleByName(" + initialPerfilName + ") => " + selected);
+                }
+
+                // Sin fallback: si no hay match, dejamos sin selección
+                if (!selected) {
+                    cbPerfil.setSelectedItem(null);
+                    System.out.println("[UpdateUsuarioDialog] Sin coincidencia -> combo sin selección.");
+                }
+
+                boolean hasItems = cbPerfil.getItemCount() > 0;
+                cbPerfil.setEnabled(hasItems);
+                btnOk.setEnabled(hasItems);
+                lblRolesHint.setText(hasItems ? " " : "No hay roles configurados. Contactá al administrador.");
+
+                PerfilUsuario sel = (PerfilUsuario) cbPerfil.getSelectedItem();
+                System.out.println("[UpdateUsuarioDialog] Selección final: " +
+                        (sel == null ? "null" : ("id=" + sel.getId() + " nombre=" + sel.getNombre())));
+            },
+            error -> {
+                System.out.println("[UpdateUsuarioDialog] ERROR cargando roles: " + error);
+                lblRolesHint.setText("No se pudieron cargar roles. Intentalo nuevamente.");
             }
-        }.execute();
+        ).execute();
     }
 
     private boolean selectRoleById(Long id) {
@@ -204,27 +190,19 @@ public class UpdateUsuarioDialog extends JDialog {
             return;
         }
 
-        new SwingWorker<Void, Void>() {
-            private Exception error;
-            @Override protected Void doInBackground() {
-                try {
-                    UserUpdateCmd cmd = new UserUpdateCmd();
-                    cmd.setPerfilId(toLong(seleccionado.getId()));
-                    controller.update(userId, cmd);
-                    return null;
-                } catch (Exception ex) { this.error = ex; return null; }
-            }
-            @Override protected void done() {
-                if (error != null) {
-                    JOptionPane.showMessageDialog(UpdateUsuarioDialog.this,
-                            (error instanceof ValidationException) ? error.getMessage() : "Error guardando cambios.");
-                    return;
-                }
+        SwingWorkerFactory.createVoidWithAutoErrorHandling(
+            this,
+            () -> {
+                UserUpdateCmd cmd = new UserUpdateCmd();
+                cmd.setPerfilId(toLong(seleccionado.getId()));
+                controller.update(userId, cmd);
+            },
+            () -> {
                 JOptionPane.showMessageDialog(UpdateUsuarioDialog.this, "Cambios guardados.");
                 if (onSaved != null) onSaved.run();
                 dispose();
             }
-        }.execute();
+        ).execute();
     }
 
     // Renderer para mostrar nombre del rol

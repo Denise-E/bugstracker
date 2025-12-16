@@ -1,11 +1,10 @@
 package ar.edu.up.bugtracker.ui.users.auth;
 
 import ar.edu.up.bugtracker.controller.UserController;
-import ar.edu.up.bugtracker.exceptions.AuthException;
-import ar.edu.up.bugtracker.exceptions.ValidationException;
 import ar.edu.up.bugtracker.service.cmd.UserLoginCmd;
 import ar.edu.up.bugtracker.service.dto.UserLoggedInDto;
 import ar.edu.up.bugtracker.ui.PanelManager;
+import ar.edu.up.bugtracker.ui.components.SwingWorkerFactory;
 
 import javax.swing.*;
 import java.awt.*;
@@ -94,32 +93,25 @@ public class LoginPanel extends JPanel {
             return;
         }
 
-        new SwingWorker<UserLoggedInDto, Void>() {
-            private Exception error;
-            @Override protected UserLoggedInDto doInBackground() {
-                try {
-                    UserLoginCmd cmd = new UserLoginCmd();
-                    cmd.setEmail(email);
-                    cmd.setPassword(pass);
-                    return controller.login(cmd);
-                } catch (Exception ex) {
-                    this.error = ex; return null;
-                }
-            }
-            @Override protected void done() {
-                try {
-                    var user = get(); // UserLoggedInDto
-                    if (user == null) {
-                        JOptionPane.showMessageDialog(LoginPanel.this, "Credenciales inválidas");
-                        return;
-                    }
+        SwingWorkerFactory.create(
+            () -> {
+                UserLoginCmd cmd = new UserLoginCmd();
+                cmd.setEmail(email);
+                cmd.setPassword(pass);
+                return controller.login(cmd);
+            },
+            user -> {
+                if (user != null) {
                     manager.onLoginSuccess(user);
-                } catch (Exception ex) {
-                    String msg = ex.getCause() != null ? ex.getCause().getMessage() : ex.getMessage();
-                    if (msg == null || msg.isBlank()) msg = "Credenciales inválidas";
-                    JOptionPane.showMessageDialog(LoginPanel.this, msg);
+                } else {
+                    JOptionPane.showMessageDialog(LoginPanel.this, "Credenciales inválidas");
                 }
+            },
+            error -> {
+                String msg = error.getCause() != null ? error.getCause().getMessage() : error.getMessage();
+                if (msg == null || msg.isBlank()) msg = "Credenciales inválidas";
+                JOptionPane.showMessageDialog(LoginPanel.this, msg);
             }
-        }.execute();
+        ).execute();
     }
 }

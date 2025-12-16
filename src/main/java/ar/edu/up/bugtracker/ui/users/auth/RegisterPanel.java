@@ -2,10 +2,10 @@ package ar.edu.up.bugtracker.ui.users.auth;
 
 import ar.edu.up.bugtracker.controller.UserController;
 import ar.edu.up.bugtracker.controller.UserRoleController;
-import ar.edu.up.bugtracker.exceptions.ValidationException;
 import ar.edu.up.bugtracker.models.PerfilUsuario;
 import ar.edu.up.bugtracker.service.cmd.UserRegisterCmd;
 import ar.edu.up.bugtracker.ui.PanelManager;
+import ar.edu.up.bugtracker.ui.components.SwingWorkerFactory;
 
 import javax.swing.*;
 import javax.swing.plaf.basic.BasicComboBoxRenderer;
@@ -125,45 +125,28 @@ public class RegisterPanel extends JPanel {
 
     /** Carga de roles desde BD de forma asíncrona y selecciona "USUARIO" por defecto. */
     private void loadRolesAsync() {
-        new SwingWorker<List<PerfilUsuario>, Void>() {
-            private Exception error;
-            @Override protected List<PerfilUsuario> doInBackground() {
-                try {
-                    return roleController.getAll();
-                } catch (Exception ex) {
-                    this.error = ex; return null;
+        SwingWorkerFactory.create(
+            () -> roleController.getAll(),
+            roles -> {
+                DefaultComboBoxModel<PerfilUsuario> model = new DefaultComboBoxModel<>();
+                if (roles != null) {
+                    for (PerfilUsuario r : roles) model.addElement(r);
                 }
+                cbPerfil.setModel(model);
+
+                boolean hasRoles = cbPerfil.getItemCount() > 0;
+                lblRolesHint.setText(hasRoles ? " " : "No hay roles configurados. Contactá al administrador.");
+                btnOk.setEnabled(hasRoles);
+                cbPerfil.setEnabled(hasRoles);
+
+                selectRoleByName("USUARIO");
+            },
+            error -> {
+                lblRolesHint.setText("No se pudieron cargar los roles. Contactá al administrador.");
+                btnOk.setEnabled(false);
+                cbPerfil.setEnabled(false);
             }
-            @Override protected void done() {
-                if (error != null) {
-                    lblRolesHint.setText("No se pudieron cargar los roles. Contactá al administrador.");
-                    btnOk.setEnabled(false);
-                    cbPerfil.setEnabled(false);
-                    return;
-                }
-                try {
-                    List<PerfilUsuario> roles = get();
-                    DefaultComboBoxModel<PerfilUsuario> model = new DefaultComboBoxModel<>();
-                    if (roles != null) {
-                        for (PerfilUsuario r : roles) model.addElement(r);
-                    }
-                    cbPerfil.setModel(model);
-
-                    boolean hasRoles = cbPerfil.getItemCount() > 0;
-                    lblRolesHint.setText(hasRoles ? " " : "No hay roles configurados. Contactá al administrador.");
-                    btnOk.setEnabled(hasRoles);
-                    cbPerfil.setEnabled(hasRoles);
-
-                    // Default: "USUARIO"
-                    selectRoleByName("USUARIO");
-
-                } catch (Exception e) {
-                    lblRolesHint.setText("Error inesperado al cargar roles.");
-                    btnOk.setEnabled(false);
-                    cbPerfil.setEnabled(false);
-                }
-            }
-        }.execute();
+        ).execute();
     }
 
     /** Selecciona en el combo el rol cuyo nombre coincida (case-insensitive). */
@@ -205,33 +188,24 @@ public class RegisterPanel extends JPanel {
             return;
         }
 
-        new SwingWorker<Long, Void>() {
-            private Exception error;
-            @Override protected Long doInBackground() {
-                try {
-                    UserRegisterCmd cmd = new UserRegisterCmd();
-                    cmd.setNombre(nombre);
-                    cmd.setApellido(apellido);
-                    cmd.setEmail(email);
-                    cmd.setPassword(pass);
-                    // enviar FK (ID de rol) al backend
-                    cmd.setPerfilId(seleccionado.getId());
-                    return controller.register(cmd);
-                } catch (Exception ex) {
-                    this.error = ex; return null;
-                }
-            }
-            @Override protected void done() {
-                if (error != null) {
-                    JOptionPane.showMessageDialog(RegisterPanel.this,
-                            (error instanceof ValidationException) ? error.getMessage() : "Error inesperado");
-                    return;
-                }
+        SwingWorkerFactory.createWithAutoErrorHandling(
+            this,
+            () -> {
+                UserRegisterCmd cmd = new UserRegisterCmd();
+                cmd.setNombre(nombre);
+                cmd.setApellido(apellido);
+                cmd.setEmail(email);
+                cmd.setPassword(pass);
+                // enviar FK (ID de rol) al backend
+                cmd.setPerfilId(seleccionado.getId());
+                return controller.register(cmd);
+            },
+            userId -> {
                 JOptionPane.showMessageDialog(RegisterPanel.this, "Registro exitoso. Iniciá sesión.");
                 clearForm();
                 manager.showLogin();
             }
-        }.execute();
+        ).execute();
     }
 
     /** Renderer: muestra el nombre del rol en el combo. */

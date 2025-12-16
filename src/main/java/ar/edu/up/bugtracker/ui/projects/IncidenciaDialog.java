@@ -2,14 +2,12 @@ package ar.edu.up.bugtracker.ui.projects;
 
 import ar.edu.up.bugtracker.controller.IncidenciaController;
 import ar.edu.up.bugtracker.controller.UserController;
-import ar.edu.up.bugtracker.exceptions.ForbiddenException;
-import ar.edu.up.bugtracker.exceptions.NotFoundException;
-import ar.edu.up.bugtracker.exceptions.ValidationException;
 import ar.edu.up.bugtracker.models.Incidencia;
 import ar.edu.up.bugtracker.models.Proyecto;
 import ar.edu.up.bugtracker.models.Usuario;
 import ar.edu.up.bugtracker.service.dto.UserDetailDto;
 import ar.edu.up.bugtracker.service.dto.UserLoggedInDto;
+import ar.edu.up.bugtracker.ui.components.SwingWorkerFactory;
 
 import javax.swing.*;
 import java.awt.*;
@@ -118,61 +116,38 @@ public class IncidenciaDialog extends JDialog {
     }
 
     private void loadUsuarios() {
-        new SwingWorker<List<UserDetailDto>, Void>() {
-            private Exception error;
-
-            @Override
-            protected List<UserDetailDto> doInBackground() {
-                try {
-                    return userController.getAll();
-                } catch (Exception ex) {
-                    this.error = ex;
-                    return null;
-                }
-            }
-
-            @Override
-            protected void done() {
-                if (error != null) {
-                    JOptionPane.showMessageDialog(IncidenciaDialog.this,
-                            "Error al cargar usuarios: " + error.getMessage());
-                    return;
-                }
-                try {
-                    List<UserDetailDto> usuarios = get();
-                    if (usuarios != null) {
-                        comboResponsable.removeAllItems();
-                        comboResponsable.removeAllItems();
-                        comboResponsable.addItem(null); // Opción "Sin asignar"
-                        for (UserDetailDto usuario : usuarios) {
-                            comboResponsable.addItem(usuario);
-                        }
-                        // Configurar renderer para mostrar nombre y apellido
-                        comboResponsable.setRenderer(new DefaultListCellRenderer() {
-                            @Override
-                            public Component getListCellRendererComponent(JList<?> list, Object value, int index,
-                                                                          boolean isSelected, boolean cellHasFocus) {
-                                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                                if (value == null) {
-                                    setText("Sin asignar");
-                                } else if (value instanceof UserDetailDto) {
-                                    UserDetailDto usuario = (UserDetailDto) value;
-                                    String nombreCompleto = usuario.getNombre() != null ? usuario.getNombre() : "";
-                                    String apellido = usuario.getApellido() != null ? usuario.getApellido() : "";
-                                    if (!apellido.isEmpty()) {
-                                        nombreCompleto += " " + apellido;
-                                    }
-                                    setText(nombreCompleto.isEmpty() ? usuario.getEmail() : nombreCompleto);
-                                }
-                                return this;
-                            }
-                        });
+        SwingWorkerFactory.createWithAutoErrorHandling(
+            this,
+            () -> userController.getAll(),
+            usuarios -> {
+                if (usuarios != null) {
+                    comboResponsable.removeAllItems();
+                    comboResponsable.addItem(null); // Opción "Sin asignar"
+                    for (UserDetailDto usuario : usuarios) {
+                        comboResponsable.addItem(usuario);
                     }
-                } catch (Exception e) {
-                    JOptionPane.showMessageDialog(IncidenciaDialog.this, "Error inesperado al cargar usuarios.");
+                    comboResponsable.setRenderer(new DefaultListCellRenderer() {
+                        @Override
+                        public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+                                                                      boolean isSelected, boolean cellHasFocus) {
+                            super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                            if (value == null) {
+                                setText("Sin asignar");
+                            } else if (value instanceof UserDetailDto) {
+                                UserDetailDto usuario = (UserDetailDto) value;
+                                String nombreCompleto = usuario.getNombre() != null ? usuario.getNombre() : "";
+                                String apellido = usuario.getApellido() != null ? usuario.getApellido() : "";
+                                if (!apellido.isEmpty()) {
+                                    nombreCompleto += " " + apellido;
+                                }
+                                setText(nombreCompleto.isEmpty() ? usuario.getEmail() : nombreCompleto);
+                            }
+                            return this;
+                        }
+                    });
                 }
             }
-        }.execute();
+        ).execute();
     }
 
     private void doSave() {
@@ -219,43 +194,16 @@ public class IncidenciaDialog extends JDialog {
 
         btnOk.setEnabled(false);
 
-        new SwingWorker<Void, Void>() {
-            private Exception error;
-
-            @Override
-            protected Void doInBackground() {
-                try {
-                    controller.create(incidencia, currentUser);
-                    return null;
-                } catch (Exception ex) {
-                    this.error = ex;
-                    return null;
-                }
-            }
-
-            @Override
-            protected void done() {
+        SwingWorkerFactory.createVoidWithAutoErrorHandling(
+            this,
+            () -> controller.create(incidencia, currentUser),
+            () -> {
                 btnOk.setEnabled(true);
-                if (error != null) {
-                    String msg;
-                    if (error instanceof ForbiddenException) {
-                        msg = "No tenés permisos para realizar esta acción.";
-                    } else if (error instanceof ValidationException) {
-                        msg = error.getMessage();
-                    } else if (error instanceof NotFoundException) {
-                        msg = "Proyecto no encontrado.";
-                    } else {
-                        String errorMsg = error.getMessage();
-                        msg = "Error guardando incidencia: " + errorMsg;
-                    }
-                    JOptionPane.showMessageDialog(IncidenciaDialog.this, msg);
-                    return;
-                }
                 JOptionPane.showMessageDialog(IncidenciaDialog.this, "Incidencia creada exitosamente.");
                 if (onSaved != null) onSaved.run();
                 dispose();
             }
-        }.execute();
+        ).execute();
     }
 }
 
