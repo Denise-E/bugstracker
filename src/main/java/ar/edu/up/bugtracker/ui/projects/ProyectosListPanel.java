@@ -7,6 +7,7 @@ import ar.edu.up.bugtracker.ui.components.BaseListPanel;
 import ar.edu.up.bugtracker.ui.components.SwingWorkerFactory;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.time.format.DateTimeFormatter;
@@ -32,24 +33,35 @@ public class ProyectosListPanel extends BaseListPanel<Proyecto> {
         this.currentUser = currentUser;
         this.isAdmin = currentUser != null && "ADMIN".equalsIgnoreCase(currentUser.getPerfil());
         this.onViewProyecto = onViewProyecto;
+        configureActionsColumn();
+        buildTopPanel();
         refresh();
     }
 
-    @Override
-    protected String getTitle() {
-        return "Listado de proyectos";
-    }
+    private void buildTopPanel() {
+        setBorder(new EmptyBorder(12, 12, 12, 12));
 
-    @Override
-    protected JPanel buildTopButtonsPanel() {
+        JPanel topPanel = new JPanel(new BorderLayout());
+        JLabel title = new JLabel("Listado de proyectos");
+        title.setFont(title.getFont().deriveFont(Font.BOLD, 18f));
+        topPanel.add(title, BorderLayout.WEST);
+
         if (isAdmin) {
-            JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
             JButton btnCrear = new JButton("Crear proyecto");
             btnCrear.addActionListener(e -> onCreateClick());
-            buttonsPanel.add(btnCrear);
-            return buttonsPanel;
+            topPanel.add(btnCrear, BorderLayout.EAST);
         }
-        return null;
+
+        // Mover el scrollPane que BaseListPanel agregó al CENTER y agregar el topPanel al NORTH
+        Component[] components = getComponents();
+        for (Component comp : components) {
+            if (comp instanceof JScrollPane) {
+                remove(comp);
+                add(topPanel, BorderLayout.NORTH);
+                add(comp, BorderLayout.CENTER);
+                break;
+            }
+        }
     }
 
     @Override

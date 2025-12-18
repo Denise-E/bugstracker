@@ -7,6 +7,7 @@ import ar.edu.up.bugtracker.ui.components.BaseListPanel;
 import ar.edu.up.bugtracker.ui.components.SwingWorkerFactory;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.time.format.DateTimeFormatter;
@@ -26,12 +27,26 @@ public class UsuariosListPanel extends BaseListPanel<UserDetailDto> {
         this.controller = controller;
         this.currentUserId = currentUserId;
         this.userController = userController;
+        configureActionsColumn();
+        buildTopPanel();
         refresh();
     }
 
-    @Override
-    protected String getTitle() {
-        return "Listado de usuarios";
+    private void buildTopPanel() {
+        setBorder(new EmptyBorder(12, 12, 12, 12));
+
+        JLabel title = new JLabel("Listado de usuarios");
+        title.setFont(title.getFont().deriveFont(Font.BOLD, 18f));
+        
+        Component[] components = getComponents();
+        for (Component comp : components) {
+            if (comp instanceof JScrollPane) {
+                remove(comp);
+                add(title, BorderLayout.NORTH);
+                add(comp, BorderLayout.CENTER);
+                break;
+            }
+        }
     }
 
     @Override

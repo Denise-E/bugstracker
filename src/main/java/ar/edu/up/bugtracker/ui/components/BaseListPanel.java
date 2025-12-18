@@ -30,19 +30,21 @@ public abstract class BaseListPanel<T> extends JPanel {
         table.setRowHeight(30);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         
-        configureActionsColumn();
         configureOtherColumns();
         
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         add(scrollPane, BorderLayout.CENTER);
     }
-
+    
+    /**
+     * Configura la columna de acciones. Las subclases deben llamar este método
+     * después de inicializar todos sus campos (ej: isAdmin).
+     */
     protected void configureActionsColumn() {
         List<String> buttonLabels = getActionButtonLabels();
         List<IntConsumer> actions = getActionHandlers();
         
-        // Crear renderer y editor reutilizables
         ActionButtonsRenderer renderer = new ActionButtonsRenderer(buttonLabels, getActionsAlignment());
         ActionButtonsEditor editor = new ActionButtonsEditor(buttonLabels, actions, getActionsAlignment());
         

@@ -185,6 +185,7 @@ public class ProyectoDetailPanel extends JPanel {
         public IncidenciasListPanel() {
             super(1);
             setBorder(new EmptyBorder(10, 0, 10, 0));
+            configureActionsColumn();
         }
 
         @Override

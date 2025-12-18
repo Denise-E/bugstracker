@@ -114,7 +114,7 @@ public class UserService {
                         .collect(Collectors.toList());
                 
                 return result;
-            } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+            } catch (BusinessException ex) {
                 throw ex;
             } catch (RuntimeException ex) {
                 rollbackSilently();
@@ -128,7 +128,7 @@ public class UserService {
             Usuario u = usuarioDao.findById(id);
             if (u == null) throw new NotFoundException("Usuario no encontrado");
             return toDetailDto(u);
-        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+        } catch (BusinessException ex) {
             throw ex;
         } catch (RuntimeException ex) {
             throw new AppException("Error obteniendo detalle del usuario: ", ex);

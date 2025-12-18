@@ -21,7 +21,9 @@ public class ExceptionHandler {
         } else if (ex instanceof ForbiddenException) {
             return "No tenés permisos para realizar esta acción.";
         } else if (ex instanceof AuthException) {
-            return "Debes estar autenticado para realizar esta acción.";
+            return ex.getMessage() != null && !ex.getMessage().isEmpty()
+                ? ex.getMessage()
+                : "Debes estar autenticado para realizar esta acción.";
         } else if (ex instanceof BusinessException) {
             return ex.getMessage() != null && !ex.getMessage().isEmpty()
                 ? ex.getMessage()

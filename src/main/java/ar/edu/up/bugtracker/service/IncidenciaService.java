@@ -94,7 +94,7 @@ public class IncidenciaService {
     public List<Incidencia> getAll() {
         try {
             return incidenciaDao.findAll();
-        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+        } catch (BusinessException ex) {
             throw ex;
         } catch (RuntimeException ex) {
             throw new AppException("Error obteniendo lista de incidencias", ex);
@@ -319,7 +319,7 @@ public class IncidenciaService {
                 em.flush(); 
                 
                 return versiones;
-            } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+            } catch (BusinessException ex) {
                 throw ex;
             } catch (RuntimeException ex) {
                 rollbackSilently();
@@ -352,7 +352,7 @@ public class IncidenciaService {
                 em.flush(); 
                 
                 return estados;
-            } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+            } catch (BusinessException ex) {
                 throw ex;
             } catch (RuntimeException ex) {
                 rollbackSilently();
@@ -368,7 +368,7 @@ public class IncidenciaService {
                 throw new NotFoundException("Estado no encontrado");
             }
             return estado;
-        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+        } catch (BusinessException ex) {
             throw ex;
         } catch (RuntimeException ex) {
             throw new AppException("Error obteniendo estado", ex);
@@ -401,7 +401,7 @@ public class IncidenciaService {
             // Eliminar la incidencia
             incidenciaDao.deleteById(id);
             commit();
-        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+        } catch (BusinessException ex) {
             rollbackSilently();
             throw ex;
         } catch (RuntimeException ex) {
