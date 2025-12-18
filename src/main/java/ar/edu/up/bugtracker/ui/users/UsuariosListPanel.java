@@ -3,69 +3,62 @@ package ar.edu.up.bugtracker.ui.users;
 import ar.edu.up.bugtracker.controller.UserController;
 import ar.edu.up.bugtracker.controller.UserRoleController;
 import ar.edu.up.bugtracker.service.dto.UserDetailDto;
+import ar.edu.up.bugtracker.ui.components.BaseListPanel;
 import ar.edu.up.bugtracker.ui.components.SwingWorkerFactory;
-import ar.edu.up.bugtracker.ui.components.tables.ActionButtonsEditor;
-import ar.edu.up.bugtracker.ui.components.tables.ActionButtonsRenderer;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.IntConsumer;
 
-public class UsuariosListPanel extends JPanel {
+public class UsuariosListPanel extends BaseListPanel<UserDetailDto> {
 
     private final UserController controller;
     private final UserRoleController userController; // controlador de roles
     private final Long currentUserId;
 
-    private final UsersTableModel tableModel = new UsersTableModel();
-    private final JTable table = new JTable(tableModel);
-
     public UsuariosListPanel(UserController controller, Long currentUserId, UserRoleController userController) {
+        super(5);
         this.controller = controller;
         this.currentUserId = currentUserId;
         this.userController = userController;
-        buildUI();
         refresh();
     }
 
-    private void buildUI() {
-        setLayout(new BorderLayout());
-        setBorder(new EmptyBorder(12,12,12,12)); // margen general
+    @Override
+    protected String getTitle() {
+        return "Listado de usuarios";
+    }
 
-        JLabel title = new JLabel("Listado de usuarios");
-        title.setFont(title.getFont().deriveFont(Font.BOLD, 18f));
-        add(title, BorderLayout.NORTH);
+    @Override
+    protected void configureOtherColumns() {
+        table.getColumnModel().getColumn(tableModel.getColumnCount() - 1).setPreferredWidth(160);
+    }
 
-        JScrollPane scroll = new JScrollPane(table);
-        scroll.setBorder(new EmptyBorder(10,0,10,0));
-        add(scroll, BorderLayout.CENTER);
+    @Override
+    protected List<String> getActionButtonLabels() {
+        return Arrays.asList("Editar", "Eliminar");
+    }
 
-        table.setRowHeight(28);
-        table.setFillsViewportHeight(true);
-
-        int actionsCol = tableModel.getColumnCount() - 1;
-        
-        // Botones
-        List<String> buttonLabels = Arrays.asList("Editar", "Eliminar");
-        List<java.util.function.IntConsumer> actions = Arrays.asList(
+    @Override
+    protected List<IntConsumer> getActionHandlers() {
+        return Arrays.asList(
             this::onEditRow,
             this::onDeleteRow
         );
-        
-        ActionButtonsRenderer renderer = new ActionButtonsRenderer(buttonLabels, FlowLayout.RIGHT);
-        ActionButtonsEditor editor = new ActionButtonsEditor(buttonLabels, actions, FlowLayout.RIGHT);
-        
-        table.getColumnModel().getColumn(actionsCol).setCellRenderer(renderer);
-        table.getColumnModel().getColumn(actionsCol).setCellEditor(editor);
-        table.getColumnModel().getColumn(actionsCol).setPreferredWidth(160);
     }
 
-    private void refresh() {
+    @Override
+    protected AbstractTableModel createTableModel() {
+        return new UsersTableModel();
+    }
+
+    @Override
+    public void refresh() {
         SwingWorkerFactory.createWithAutoErrorHandling(
             this,
             () -> {
@@ -81,12 +74,15 @@ public class UsuariosListPanel extends JPanel {
                 }
                 return filtered;
             },
-            filtered -> tableModel.setData(filtered)
+            filtered -> {
+                UsersTableModel model = (UsersTableModel) tableModel;
+                model.setData(filtered);
+            }
         ).execute();
     }
 
     // Tabla
-    private static class UsersTableModel extends AbstractTableModel {
+    private class UsersTableModel extends AbstractTableModel {
         private final String[] cols = {"Nombre","Apellido","Email","Perfil","Creado","Acciones"};
         private final DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
         private List<UserDetailDto> data = new ArrayList<UserDetailDto>();
@@ -127,10 +123,10 @@ public class UsuariosListPanel extends JPanel {
         }
     }
 
-
     // Acciones de las filas
     private void onEditRow(int row) {
-        UserDetailDto dto = tableModel.getAt(row);
+        UsersTableModel model = (UsersTableModel) tableModel;
+        UserDetailDto dto = model.getAt(row);
         if (dto == null) return;
 
         // Pasamos el usuario de la fila y el rol de la fila (por nombre).
@@ -152,7 +148,8 @@ public class UsuariosListPanel extends JPanel {
     }
 
     private void onDeleteRow(int row) {
-        UserDetailDto dto = tableModel.getAt(row);
+        UsersTableModel model = (UsersTableModel) tableModel;
+        UserDetailDto dto = model.getAt(row);
         if (dto == null) return;
 
         int opt = JOptionPane.showOptionDialog(

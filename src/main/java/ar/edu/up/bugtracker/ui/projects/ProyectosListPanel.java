@@ -3,99 +3,93 @@ package ar.edu.up.bugtracker.ui.projects;
 import ar.edu.up.bugtracker.controller.ProyectoController;
 import ar.edu.up.bugtracker.models.Proyecto;
 import ar.edu.up.bugtracker.service.dto.UserLoggedInDto;
+import ar.edu.up.bugtracker.ui.components.BaseListPanel;
 import ar.edu.up.bugtracker.ui.components.SwingWorkerFactory;
-import ar.edu.up.bugtracker.ui.components.tables.ActionButtonsEditor;
-import ar.edu.up.bugtracker.ui.components.tables.ActionButtonsRenderer;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 
-public class ProyectosListPanel extends JPanel {
+public class ProyectosListPanel extends BaseListPanel<Proyecto> {
 
     private final ProyectoController controller;
     private final UserLoggedInDto currentUser;
     private final boolean isAdmin;
     private Consumer<Long> onViewProyecto;
 
-    private final ProyectosTableModel tableModel = new ProyectosTableModel();
-    private final JTable table = new JTable(tableModel);
-
     public ProyectosListPanel(ProyectoController controller, UserLoggedInDto currentUser) {
         this(controller, currentUser, null);
     }
 
     public ProyectosListPanel(ProyectoController controller, UserLoggedInDto currentUser, Consumer<Long> onViewProyecto) {
+        super(2);
         this.controller = controller;
         this.currentUser = currentUser;
         this.isAdmin = currentUser != null && "ADMIN".equalsIgnoreCase(currentUser.getPerfil());
         this.onViewProyecto = onViewProyecto;
-        buildUI();
         refresh();
     }
 
-    private void buildUI() {
-        setLayout(new BorderLayout());
-        setBorder(new EmptyBorder(12, 12, 12, 12));
+    @Override
+    protected String getTitle() {
+        return "Listado de proyectos";
+    }
 
-        // Panel superior con título y botón crear
-        JPanel topPanel = new JPanel(new BorderLayout());
-        JLabel title = new JLabel("Listado de proyectos");
-        title.setFont(title.getFont().deriveFont(Font.BOLD, 18f));
-        topPanel.add(title, BorderLayout.WEST);
-
+    @Override
+    protected JPanel buildTopButtonsPanel() {
         if (isAdmin) {
+            JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
             JButton btnCrear = new JButton("Crear proyecto");
             btnCrear.addActionListener(e -> onCreateClick());
-            topPanel.add(btnCrear, BorderLayout.EAST);
+            buttonsPanel.add(btnCrear);
+            return buttonsPanel;
         }
+        return null;
+    }
 
-        add(topPanel, BorderLayout.NORTH);
-
-        // Tabla
-        JScrollPane scroll = new JScrollPane(table);
-        scroll.setBorder(new EmptyBorder(10, 0, 10, 0));
-        add(scroll, BorderLayout.CENTER);
-
-        table.setRowHeight(28);
-        table.setFillsViewportHeight(true);
-
-        int actionsCol = tableModel.getColumnCount() - 1;
-        
-        // Botones
-        List<String> buttonLabels = new ArrayList<>();
-        List<java.util.function.IntConsumer> actions = new ArrayList<>();
-        
-        buttonLabels.add("Editar");
-        actions.add(this::onEditRow);
-        
-        buttonLabels.add("Ver");
-        actions.add(this::onViewRow);
-        
-        if (isAdmin) {
-            buttonLabels.add("Eliminar");
-            actions.add(this::onDeleteRow);
-        }
-        
-        ActionButtonsRenderer renderer = new ActionButtonsRenderer(buttonLabels, FlowLayout.RIGHT);
-        ActionButtonsEditor editor = new ActionButtonsEditor(buttonLabels, actions, FlowLayout.RIGHT);
-        
-        table.getColumnModel().getColumn(actionsCol).setCellRenderer(renderer);
-        table.getColumnModel().getColumn(actionsCol).setCellEditor(editor);
-        int accionesWidth = isAdmin ? 200 : 130;
-        table.getColumnModel().getColumn(actionsCol).setPreferredWidth(accionesWidth);
-        table.getColumnModel().getColumn(actionsCol).setResizable(false); 
-        
+    @Override
+    protected void configureOtherColumns() {
         int fechaCol = 1; 
         table.getColumnModel().getColumn(fechaCol).setPreferredWidth(140);
         table.getColumnModel().getColumn(fechaCol).setMinWidth(120);
         table.getColumnModel().getColumn(fechaCol).setMaxWidth(160);
+    }
+
+    @Override
+    protected int calculateActionsColumnWidth(int buttonCount) {
+        return isAdmin ? 200 : 130;
+    }
+
+    @Override
+    protected List<String> getActionButtonLabels() {
+        List<String> labels = new ArrayList<>();
+        labels.add("Editar");
+        labels.add("Ver");
+        if (isAdmin) {
+            labels.add("Eliminar");
+        }
+        return labels;
+    }
+
+    @Override
+    protected List<IntConsumer> getActionHandlers() {
+        List<IntConsumer> handlers = new ArrayList<>();
+        handlers.add(this::onEditRow);
+        handlers.add(this::onViewRow);
+        if (isAdmin) {
+            handlers.add(this::onDeleteRow);
+        }
+        return handlers;
+    }
+
+    @Override
+    protected AbstractTableModel createTableModel() {
+        return new ProyectosTableModel();
     }
 
     private void onCreateClick() {
@@ -109,16 +103,20 @@ public class ProyectosListPanel extends JPanel {
         dlg.setVisible(true);
     }
 
-    private void refresh() {
+    @Override
+    public void refresh() {
         SwingWorkerFactory.createWithAutoErrorHandling(
             this,
             () -> controller.getAll(),
-            proyectos -> tableModel.setData(proyectos != null ? proyectos : new ArrayList<>())
+            proyectos -> {
+                ProyectosTableModel model = (ProyectosTableModel) tableModel;
+                model.setData(proyectos != null ? proyectos : new ArrayList<>());
+            }
         ).execute();
     }
 
     // Tabla
-    private static class ProyectosTableModel extends AbstractTableModel {
+    private class ProyectosTableModel extends AbstractTableModel {
         private final String[] cols = {"Nombre", "Creado", "Acciones"};
         private final DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
         private List<Proyecto> data = new ArrayList<>();
@@ -175,10 +173,10 @@ public class ProyectosListPanel extends JPanel {
         }
     }
 
-
     // Acciones de cada fila
     private void onEditRow(int row) {
-        Proyecto proyecto = tableModel.getAt(row);
+        ProyectosTableModel model = (ProyectosTableModel) tableModel;
+        Proyecto proyecto = model.getAt(row);
         if (proyecto == null) return;
 
         ProyectoDialog dlg = new ProyectoDialog(
@@ -192,7 +190,8 @@ public class ProyectosListPanel extends JPanel {
     }
 
     private void onViewRow(int row) {
-        Proyecto proyecto = tableModel.getAt(row);
+        ProyectosTableModel model = (ProyectosTableModel) tableModel;
+        Proyecto proyecto = model.getAt(row);
         if (proyecto == null) return;
         
         if (onViewProyecto != null) {
@@ -201,7 +200,8 @@ public class ProyectosListPanel extends JPanel {
     }
 
     private void onDeleteRow(int row) {
-        Proyecto proyecto = tableModel.getAt(row);
+        ProyectosTableModel model = (ProyectosTableModel) tableModel;
+        Proyecto proyecto = model.getAt(row);
         if (proyecto == null) return;
 
         int opt = JOptionPane.showOptionDialog(

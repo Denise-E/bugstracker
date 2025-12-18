@@ -8,17 +8,18 @@ import ar.edu.up.bugtracker.exceptions.NotFoundException;
 import ar.edu.up.bugtracker.models.Incidencia;
 import ar.edu.up.bugtracker.models.Proyecto;
 import ar.edu.up.bugtracker.service.dto.UserLoggedInDto;
+import ar.edu.up.bugtracker.ui.components.BaseListPanel;
 import ar.edu.up.bugtracker.ui.components.SwingWorkerFactory;
-import ar.edu.up.bugtracker.ui.components.tables.ActionButtonsEditor;
-import ar.edu.up.bugtracker.ui.components.tables.ActionButtonsRenderer;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 
 public class ProyectoDetailPanel extends JPanel {
 
@@ -31,8 +32,7 @@ public class ProyectoDetailPanel extends JPanel {
     private final boolean isAdmin;
     private final Consumer<Long> onViewIncidencia;
 
-    private final IncidenciasTableModel tableModel = new IncidenciasTableModel();
-    private final JTable table = new JTable(tableModel);
+    private IncidenciasListPanel incidenciasListPanel;
     private Proyecto proyecto;
     private JLabel lblNombre;
     private JLabel lblDescripcion;
@@ -116,65 +116,10 @@ public class ProyectoDetailPanel extends JPanel {
         
         centerPanel.add(proyectoInfoPanel, BorderLayout.NORTH);
 
-        // Tabla de incidencias
-        JScrollPane scroll = new JScrollPane(table);
-        scroll.setBorder(new EmptyBorder(10, 0, 10, 0));
-        centerPanel.add(scroll, BorderLayout.CENTER);
+        incidenciasListPanel = new IncidenciasListPanel();
+        centerPanel.add(incidenciasListPanel, BorderLayout.CENTER);
 
         add(centerPanel, BorderLayout.CENTER);
-
-        table.setRowHeight(28);
-        table.setFillsViewportHeight(true);
-        
-        // Configurar columna de descripción para permitir múltiples líneas
-        table.getColumnModel().getColumn(0).setCellRenderer(new javax.swing.table.DefaultTableCellRenderer() {
-            @Override
-            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-                JTextArea textArea = new JTextArea();
-                textArea.setText(value != null ? value.toString() : "");
-                textArea.setWrapStyleWord(true);
-                textArea.setLineWrap(true);
-                textArea.setOpaque(true);
-                textArea.setBorder(new EmptyBorder(4, 4, 4, 4));
-                
-                if (isSelected) {
-                    textArea.setBackground(table.getSelectionBackground());
-                    textArea.setForeground(table.getSelectionForeground());
-                } else {
-                    textArea.setBackground(table.getBackground());
-                    textArea.setForeground(table.getForeground());
-                }
-                
-                int height = textArea.getPreferredSize().height;
-                if (height > table.getRowHeight(row)) {
-                    table.setRowHeight(row, Math.min(height + 8, 200)); // Máximo 200px
-                }
-                
-                return textArea;
-            }
-        });
-        table.getColumnModel().getColumn(0).setPreferredWidth(500);
-
-        int actionsCol = tableModel.getColumnCount() - 1;
-        
-        // Botones
-        List<String> buttonLabels = new ArrayList<>();
-        List<java.util.function.IntConsumer> actions = new ArrayList<>();
-        
-        buttonLabels.add("Ver");
-        actions.add(this::onViewRow);
-        
-        if (isAdmin) {
-            buttonLabels.add("Eliminar");
-            actions.add(this::onDeleteRow);
-        }
-        
-        ActionButtonsRenderer renderer = new ActionButtonsRenderer(buttonLabels, FlowLayout.CENTER);
-        ActionButtonsEditor editor = new ActionButtonsEditor(buttonLabels, actions, FlowLayout.CENTER);
-        
-        table.getColumnModel().getColumn(actionsCol).setCellRenderer(renderer);
-        table.getColumnModel().getColumn(actionsCol).setCellEditor(editor);
-        table.getColumnModel().getColumn(actionsCol).setPreferredWidth(120);
     }
 
     private void loadProyecto() {
@@ -230,15 +175,139 @@ public class ProyectoDetailPanel extends JPanel {
     }
 
     private void loadIncidencias() {
-        SwingWorkerFactory.createWithAutoErrorHandling(
-            this,
-            () -> incidenciaController.findByProyecto(proyectoId),
-            incidencias -> tableModel.setData(incidencias != null ? incidencias : new ArrayList<>())
-        ).execute();
+        if (incidenciasListPanel != null) {
+            incidenciasListPanel.refresh();
+        }
+    }
+
+    private class IncidenciasListPanel extends BaseListPanel<Incidencia> {
+        
+        public IncidenciasListPanel() {
+            super(1);
+            setBorder(new EmptyBorder(10, 0, 10, 0));
+        }
+
+        @Override
+        protected void configureOtherColumns() {
+            // Configurar columna de descripción para permitir múltiples líneas
+            table.getColumnModel().getColumn(0).setCellRenderer(new javax.swing.table.DefaultTableCellRenderer() {
+                @Override
+                public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                    JTextArea textArea = new JTextArea();
+                    textArea.setText(value != null ? value.toString() : "");
+                    textArea.setWrapStyleWord(true);
+                    textArea.setLineWrap(true);
+                    textArea.setOpaque(true);
+                    textArea.setBorder(new EmptyBorder(4, 4, 4, 4));
+                    
+                    if (isSelected) {
+                        textArea.setBackground(table.getSelectionBackground());
+                        textArea.setForeground(table.getSelectionForeground());
+                    } else {
+                        textArea.setBackground(table.getBackground());
+                        textArea.setForeground(table.getForeground());
+                    }
+                    
+                    int height = textArea.getPreferredSize().height;
+                    if (height > table.getRowHeight(row)) {
+                        table.setRowHeight(row, Math.min(height + 8, 200)); // Máximo 200px
+                    }
+                    
+                    return textArea;
+                }
+            });
+            table.getColumnModel().getColumn(0).setPreferredWidth(500);
+            table.setRowHeight(28);
+            table.setFillsViewportHeight(true);
+        }
+
+        @Override
+        protected int getActionsAlignment() {
+            return FlowLayout.CENTER;
+        }
+
+        @Override
+        protected int calculateActionsColumnWidth(int buttonCount) {
+            return 120;
+        }
+
+        @Override
+        protected List<String> getActionButtonLabels() {
+            List<String> labels = new ArrayList<>();
+            labels.add("Ver");
+            if (isAdmin) {
+                labels.add("Eliminar");
+            }
+            return labels;
+        }
+
+        @Override
+        protected List<IntConsumer> getActionHandlers() {
+            List<IntConsumer> handlers = new ArrayList<>();
+            handlers.add(IncidenciasListPanel.this::onViewRow);
+            if (isAdmin) {
+                handlers.add(IncidenciasListPanel.this::onDeleteRow);
+            }
+            return handlers;
+        }
+
+        @Override
+        protected AbstractTableModel createTableModel() {
+            return new IncidenciasTableModel();
+        }
+
+        @Override
+        public void refresh() {
+            SwingWorkerFactory.createWithAutoErrorHandling(
+                ProyectoDetailPanel.this,
+                () -> incidenciaController.findByProyecto(proyectoId),
+                incidencias -> {
+                    IncidenciasTableModel model = (IncidenciasTableModel) tableModel;
+                    model.setData(incidencias != null ? incidencias : new ArrayList<>());
+                }
+            ).execute();
+        }
+
+        private void onViewRow(int row) {
+            IncidenciasTableModel model = (IncidenciasTableModel) tableModel;
+            Incidencia incidencia = model.getAt(row);
+            if (incidencia == null) return;
+
+            if (onViewIncidencia != null) {
+                onViewIncidencia.accept(incidencia.getId());
+            }
+        }
+
+        private void onDeleteRow(int row) {
+            IncidenciasTableModel model = (IncidenciasTableModel) tableModel;
+            Incidencia incidencia = model.getAt(row);
+            if (incidencia == null) return;
+
+            int opt = JOptionPane.showOptionDialog(
+                    ProyectoDetailPanel.this,
+                    "¿Estás seguro que deseas eliminar la incidencia? Esta acción no puede deshacerse.",
+                    "Confirmar eliminación",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE,
+                    null,
+                    new Object[]{"Sí", "No"},
+                    "No"
+            );
+            if (opt != JOptionPane.YES_OPTION) return;
+
+            SwingWorkerFactory.createVoidWithAutoErrorHandling(
+                ProyectoDetailPanel.this,
+                () -> incidenciaController.delete(incidencia.getId()),
+                () -> {
+                    JOptionPane.showMessageDialog(ProyectoDetailPanel.this, "Incidencia eliminada.");
+                    refresh();
+                }
+            ).execute();
+        }
     }
 
     // Tabla de incidencias
-    private static class IncidenciasTableModel extends AbstractTableModel {
+    private class IncidenciasTableModel extends AbstractTableModel {
         private final String[] cols = {"Descripción", "Acciones"};
         private List<Incidencia> data = new ArrayList<>();
 
@@ -290,42 +359,6 @@ public class ProyectoDetailPanel extends JPanel {
         public Class<?> getColumnClass(int columnIndex) {
             return String.class;
         }
-    }
-
-
-    private void onViewRow(int row) {
-        Incidencia incidencia = tableModel.getAt(row);
-        if (incidencia == null) return;
-
-        if (onViewIncidencia != null) {
-            onViewIncidencia.accept(incidencia.getId());
-        }
-    }
-
-    private void onDeleteRow(int row) {
-        Incidencia incidencia = tableModel.getAt(row);
-        if (incidencia == null) return;
-
-        int opt = JOptionPane.showOptionDialog(
-                this,
-                "¿Estás seguro que deseas eliminar la incidencia? Esta acción no puede deshacerse.",
-                "Confirmar eliminación",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.WARNING_MESSAGE,
-                null,
-                new Object[]{"Sí", "No"},
-                "No"
-        );
-        if (opt != JOptionPane.YES_OPTION) return;
-
-        SwingWorkerFactory.createVoidWithAutoErrorHandling(
-            this,
-            () -> incidenciaController.delete(incidencia.getId()),
-            () -> {
-                JOptionPane.showMessageDialog(ProyectoDetailPanel.this, "Incidencia eliminada.");
-                loadIncidencias();
-            }
-        ).execute();
     }
 }
 

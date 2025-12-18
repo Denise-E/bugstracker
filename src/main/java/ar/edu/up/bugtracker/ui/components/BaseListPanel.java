@@ -6,7 +6,6 @@ import ar.edu.up.bugtracker.ui.components.tables.ActionButtonsRenderer;
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.IntConsumer;
 
@@ -14,30 +13,15 @@ import java.util.function.IntConsumer;
 public abstract class BaseListPanel<T> extends JPanel {
     protected JTable table;
     protected AbstractTableModel tableModel;
-    protected final List<T> data;
-    protected final String[] columnNames;
     protected final int actionsColumnIndex;
 
     /**
-     * @param columnNames Nombres de las columnas (sin incluir "Acciones")
      * @param actionsColumnIndex Índice de la columna de acciones (normalmente el último)
      */
-    public BaseListPanel(String[] columnNames, int actionsColumnIndex) {
-        this.data = new ArrayList<>();
-        this.columnNames = createColumnNamesWithActions(columnNames);
+    public BaseListPanel(int actionsColumnIndex) {
         this.actionsColumnIndex = actionsColumnIndex;
         setLayout(new BorderLayout());
         buildUI();
-    }
-
-    /**
-     * Crea el array de nombres de las columnas.
-     */
-    private String[] createColumnNamesWithActions(String[] baseColumns) {
-        String[] result = new String[baseColumns.length + 1];
-        System.arraycopy(baseColumns, 0, result, 0, baseColumns.length);
-        result[result.length - 1] = "Acciones";
-        return result;
     }
 
     protected void buildUI() {
@@ -53,7 +37,6 @@ public abstract class BaseListPanel<T> extends JPanel {
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         add(scrollPane, BorderLayout.CENTER);
     }
-
 
     protected void configureActionsColumn() {
         List<String> buttonLabels = getActionButtonLabels();
@@ -71,11 +54,9 @@ public abstract class BaseListPanel<T> extends JPanel {
         table.getColumnModel().getColumn(actionsColumnIndex).setResizable(false);
     }
 
-
     protected int calculateActionsColumnWidth(int buttonCount) {
         return buttonCount * 65 + 20;
     }
-
 
     protected void configureOtherColumns() {
     }
@@ -89,36 +70,6 @@ public abstract class BaseListPanel<T> extends JPanel {
     }
 
     protected abstract AbstractTableModel createTableModel();
-
-    public void updateData(List<T> data) {
-        this.data.clear();
-        if (data != null) {
-            this.data.addAll(data);
-        }
-        tableModel.fireTableDataChanged();
-    }
-
-    /**
-     * Obtiene la entidad en la fila especificada.
-     * 
-     * @param row Índice de la fila
-     * @return Entidad en esa fila, o null si el índice es inválido
-     */
-    protected T getEntityAt(int row) {
-        if (row >= 0 && row < data.size()) {
-            return data.get(row);
-        }
-        return null;
-    }
-
-    /**
-     * Obtiene el índice de la fila seleccionada.
-     * 
-     * @return Índice de la fila seleccionada, o -1 si no hay selección
-     */
-    protected int getSelectedRow() {
-        return table.getSelectedRow();
-    }
 
     /**
      * Refresca los datos de la tabla.
