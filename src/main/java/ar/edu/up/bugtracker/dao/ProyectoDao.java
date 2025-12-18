@@ -63,5 +63,13 @@ public class ProyectoDao implements IDao<Proyecto, Long> {
             throw new DaoException("Error eliminando proyecto", e);
         }
     }
+
+    public Proyecto getReference(Long id) {
+        try {
+            return em.getReference(Proyecto.class, id);
+        } catch (Exception e) {
+            throw new DaoException("Error obteniendo referencia de proyecto", e);
+        }
+    }
 }
 

@@ -1,8 +1,11 @@
 package ar.edu.up.bugtracker.service;
 
 import ar.edu.up.bugtracker.dao.ComentarioDao;
+import ar.edu.up.bugtracker.dao.IncidenciaDao;
+import ar.edu.up.bugtracker.dao.UserDao;
 import ar.edu.up.bugtracker.exceptions.*;
 import ar.edu.up.bugtracker.models.Comentario;
+import ar.edu.up.bugtracker.models.Incidencia;
 import ar.edu.up.bugtracker.models.Usuario;
 import ar.edu.up.bugtracker.service.dto.UserLoggedInDto;
 import jakarta.persistence.EntityManager;
@@ -12,10 +15,14 @@ import java.util.List;
 public class ComentarioService {
 
     private final ComentarioDao comentarioDao;
+    private final UserDao userDao;
+    private final IncidenciaDao incidenciaDao;
     private final EntityManager em;
 
-    public ComentarioService(ComentarioDao comentarioDao, EntityManager em) {
+    public ComentarioService(ComentarioDao comentarioDao, UserDao userDao, IncidenciaDao incidenciaDao, EntityManager em) {
         this.comentarioDao = comentarioDao;
+        this.userDao = userDao;
+        this.incidenciaDao = incidenciaDao;
         this.em = em;
     }
 
@@ -35,7 +42,7 @@ public class ComentarioService {
             throw new AuthException("Debes estar autenticado para crear comentarios");
         }
 
-        Usuario creador = em.find(Usuario.class, currentUser.getId());
+        Usuario creador = userDao.findById(currentUser.getId());
         if (creador == null) {
             throw new NotFoundException("Usuario no encontrado");
         }
@@ -44,8 +51,7 @@ public class ComentarioService {
         try {
             begin();
             Long incidenciaId = comentario.getIncidencia().getId();
-            ar.edu.up.bugtracker.models.Incidencia incidenciaRef = em.getReference(
-                ar.edu.up.bugtracker.models.Incidencia.class, incidenciaId);
+            Incidencia incidenciaRef = incidenciaDao.getReference(incidenciaId);
             comentario.setIncidencia(incidenciaRef);
             
             Long id = comentarioDao.create(comentario);

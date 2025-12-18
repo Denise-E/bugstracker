@@ -21,7 +21,12 @@ public class PerfilUsuarioDao implements IDao<PerfilUsuario, Long> {
 
     @Override
     public PerfilUsuario findById(Long id) {
-        return null;
+        try {
+            if (id == null) return null;
+            return em.find(PerfilUsuario.class, id);
+        } catch (Exception e) {
+            throw new DaoException("Error buscando perfil por id", e);
+        }
     }
 
     @Override

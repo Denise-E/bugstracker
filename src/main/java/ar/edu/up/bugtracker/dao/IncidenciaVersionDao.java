@@ -78,5 +78,15 @@ public class IncidenciaVersionDao implements IDao<IncidenciaVersion, Long> {
             throw new DaoException("Error eliminando versión de incidencia", e);
         }
     }
+
+    public void deleteByIncidenciaId(Long incidenciaId) {
+        try {
+            em.createQuery("DELETE FROM IncidenciaVersion iv WHERE iv.incidencia.id = :incidenciaId")
+                    .setParameter("incidenciaId", incidenciaId)
+                    .executeUpdate();
+        } catch (Exception e) {
+            throw new DaoException("Error eliminando versiones por incidencia", e);
+        }
+    }
 }
 

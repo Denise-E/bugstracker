@@ -1,7 +1,10 @@
 package ar.edu.up.bugtracker.service;
 
+import ar.edu.up.bugtracker.dao.ComentarioDao;
 import ar.edu.up.bugtracker.dao.IncidenciaDao;
 import ar.edu.up.bugtracker.dao.IncidenciaVersionDao;
+import ar.edu.up.bugtracker.dao.ProyectoDao;
+import ar.edu.up.bugtracker.dao.UserDao;
 import ar.edu.up.bugtracker.exceptions.*;
 import ar.edu.up.bugtracker.models.Incidencia;
 import ar.edu.up.bugtracker.models.IncidenciaEstado;
@@ -18,11 +21,19 @@ public class IncidenciaService {
 
     private final IncidenciaDao incidenciaDao;
     private final IncidenciaVersionDao versionDao;
+    private final UserDao userDao;
+    private final ProyectoDao proyectoDao;
+    private final ComentarioDao comentarioDao;
     private final EntityManager em;
 
-    public IncidenciaService(IncidenciaDao incidenciaDao, IncidenciaVersionDao versionDao, EntityManager em) {
+    public IncidenciaService(IncidenciaDao incidenciaDao, IncidenciaVersionDao versionDao, 
+                             UserDao userDao, ProyectoDao proyectoDao, ComentarioDao comentarioDao,
+                             EntityManager em) {
         this.incidenciaDao = incidenciaDao;
         this.versionDao = versionDao;
+        this.userDao = userDao;
+        this.proyectoDao = proyectoDao;
+        this.comentarioDao = comentarioDao;
         this.em = em;
     }
 
@@ -45,7 +56,7 @@ public class IncidenciaService {
             throw new BusinessException("No se encontró el estado inicial con ID 1");
         }
 
-        Usuario creador = em.find(Usuario.class, currentUser.getId());
+        Usuario creador = userDao.findById(currentUser.getId());
         if (creador == null) {
             throw new NotFoundException("Usuario no encontrado");
         }
@@ -54,12 +65,12 @@ public class IncidenciaService {
             begin();
 
             if (incidencia.getProyecto() != null && incidencia.getProyecto().getId() != null) {
-                Proyecto proyectoGestionado = em.getReference(Proyecto.class, incidencia.getProyecto().getId());
+                Proyecto proyectoGestionado = proyectoDao.getReference(incidencia.getProyecto().getId());
                 incidencia.setProyecto(proyectoGestionado);
             }
 
             if (incidencia.getResponsable() != null && incidencia.getResponsable().getId() != null) {
-                Usuario responsableGestionado = em.getReference(Usuario.class, incidencia.getResponsable().getId());
+                Usuario responsableGestionado = userDao.getReference(incidencia.getResponsable().getId());
                 incidencia.setResponsable(responsableGestionado);
             }
 
@@ -195,7 +206,7 @@ public class IncidenciaService {
             
             if (actualizarResponsable) {
                 if (incidencia.getResponsable() != null && incidencia.getResponsable().getId() != null) {
-                    Usuario responsable = em.find(Usuario.class, incidencia.getResponsable().getId());
+                    Usuario responsable = userDao.findById(incidencia.getResponsable().getId());
                     existente.setResponsable(responsable);
                 } else {
                     existente.setResponsable(null);
@@ -243,7 +254,7 @@ public class IncidenciaService {
             throw new ValidationException("La incidencia ya está en ese estado");
         }
 
-        Usuario usuario = em.find(Usuario.class, currentUser.getId());
+        Usuario usuario = userDao.findById(currentUser.getId());
         if (usuario == null) {
             throw new NotFoundException("Usuario no encontrado");
         }
@@ -385,16 +396,12 @@ public class IncidenciaService {
             begin();
             
             // Eliminar todos los comentarios
-            em.createQuery("DELETE FROM Comentario c WHERE c.incidencia.id = :incidenciaId")
-                    .setParameter("incidenciaId", id)
-                    .executeUpdate();
+            comentarioDao.deleteByIncidenciaId(id);
             em.flush();
             em.clear();
             
             // Eliminar todas las versiones
-            em.createQuery("DELETE FROM IncidenciaVersion iv WHERE iv.incidencia.id = :incidenciaId")
-                    .setParameter("incidenciaId", id)
-                    .executeUpdate();
+            versionDao.deleteByIncidenciaId(id);
             em.flush();
             em.clear();
             

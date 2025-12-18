@@ -63,25 +63,24 @@ public class Main {
         EntityManager em = emf.createEntityManager();
 
         // Inicialización clases
-        UserDao usuarioDao = new UserDao(em);
-        UserService usuarioService = new UserService(usuarioDao, em);
-        UserController usuarioController = new UserController(usuarioService);
-
         PerfilUsuarioDao perfilDao = new PerfilUsuarioDao(em);
+        UserDao usuarioDao = new UserDao(em);
+        UserService usuarioService = new UserService(usuarioDao, perfilDao, em);
+        UserController usuarioController = new UserController(usuarioService);
         PerfilUsuarioService perfilService = new PerfilUsuarioService(perfilDao);
         UserRoleController roleController = new UserRoleController(perfilService);
 
         ProyectoDao proyectoDao = new ProyectoDao(em);
         IncidenciaDao incidenciaDao = new IncidenciaDao(em);
-        ProyectoService proyectoService = new ProyectoService(proyectoDao, incidenciaDao, em);
+        ComentarioDao comentarioDao = new ComentarioDao(em);
+        IncidenciaVersionDao incidenciaVersionDao = new IncidenciaVersionDao(em);
+        ProyectoService proyectoService = new ProyectoService(proyectoDao, incidenciaDao, comentarioDao, incidenciaVersionDao, em);
         ProyectoController proyectoController = new ProyectoController(proyectoService);
 
-        IncidenciaVersionDao incidenciaVersionDao = new IncidenciaVersionDao(em);
-        IncidenciaService incidenciaService = new IncidenciaService(incidenciaDao, incidenciaVersionDao, em);
+        IncidenciaService incidenciaService = new IncidenciaService(incidenciaDao, incidenciaVersionDao, 
+                                                                    usuarioDao, proyectoDao, comentarioDao, em);
         IncidenciaController incidenciaController = new IncidenciaController(incidenciaService);
-
-        ComentarioDao comentarioDao = new ComentarioDao(em);
-        ComentarioService comentarioService = new ComentarioService(comentarioDao, em);
+        ComentarioService comentarioService = new ComentarioService(comentarioDao, usuarioDao, incidenciaDao, em);
         ComentarioController comentarioController = new ComentarioController(comentarioService);
 
         // Levantar UI

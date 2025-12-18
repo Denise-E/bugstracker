@@ -122,5 +122,23 @@ public class IncidenciaDao implements IDao<Incidencia, Long> {
             throw new DaoException("Error listando estados", e);
         }
     }
+
+    public void deleteByProyectoId(Long proyectoId) {
+        try {
+            em.createQuery("DELETE FROM Incidencia i WHERE i.proyecto.id = :proyectoId")
+                    .setParameter("proyectoId", proyectoId)
+                    .executeUpdate();
+        } catch (Exception e) {
+            throw new DaoException("Error eliminando incidencias por proyecto", e);
+        }
+    }
+
+    public Incidencia getReference(Long id) {
+        try {
+            return em.getReference(Incidencia.class, id);
+        } catch (Exception e) {
+            throw new DaoException("Error obteniendo referencia de incidencia", e);
+        }
+    }
 }
 

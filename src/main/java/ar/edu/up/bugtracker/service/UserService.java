@@ -1,5 +1,6 @@
 package ar.edu.up.bugtracker.service;
 
+import ar.edu.up.bugtracker.dao.PerfilUsuarioDao;
 import ar.edu.up.bugtracker.dao.UserDao;
 import ar.edu.up.bugtracker.exceptions.*;
 import ar.edu.up.bugtracker.models.PerfilUsuario;
@@ -23,11 +24,13 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserDao usuarioDao;
+    private final PerfilUsuarioDao perfilUsuarioDao;
     private final EntityManager em; 
     private static final int SALT_BYTES = 24;
 
-    public UserService(UserDao usuarioDao, EntityManager em) {
+    public UserService(UserDao usuarioDao, PerfilUsuarioDao perfilUsuarioDao, EntityManager em) {
         this.usuarioDao = usuarioDao;
+        this.perfilUsuarioDao = perfilUsuarioDao;
         this.em = em;
     }
 
@@ -188,7 +191,7 @@ public class UserService {
     // Helpers
     private PerfilUsuario resolvePerfil(Long perfilId) {
         if (perfilId == null) return null;
-        return em.find(PerfilUsuario.class, perfilId);
+        return perfilUsuarioDao.findById(perfilId);
     }
 
     private String normEmail(String email) {

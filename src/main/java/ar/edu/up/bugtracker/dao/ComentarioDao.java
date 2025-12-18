@@ -75,5 +75,15 @@ public class ComentarioDao implements IDao<Comentario, Long> {
             throw new DaoException("Error eliminando comentario", e);
         }
     }
+
+    public void deleteByIncidenciaId(Long incidenciaId) {
+        try {
+            em.createQuery("DELETE FROM Comentario c WHERE c.incidencia.id = :incidenciaId")
+                    .setParameter("incidenciaId", incidenciaId)
+                    .executeUpdate();
+        } catch (Exception e) {
+            throw new DaoException("Error eliminando comentarios por incidencia", e);
+        }
+    }
 }
 

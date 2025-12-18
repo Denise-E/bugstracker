@@ -108,4 +108,12 @@ public class UserDao implements IDao<Usuario, Long> {
             throw new DaoException("Error buscando perfil por nombre", e);
         }
     }
+
+    public Usuario getReference(Long id) {
+        try {
+            return em.getReference(Usuario.class, id);
+        } catch (Exception e) {
+            throw new DaoException("Error obteniendo referencia de usuario", e);
+        }
+    }
 }

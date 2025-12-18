@@ -1,6 +1,8 @@
 package ar.edu.up.bugtracker.service;
 
+import ar.edu.up.bugtracker.dao.ComentarioDao;
 import ar.edu.up.bugtracker.dao.IncidenciaDao;
+import ar.edu.up.bugtracker.dao.IncidenciaVersionDao;
 import ar.edu.up.bugtracker.dao.ProyectoDao;
 import ar.edu.up.bugtracker.exceptions.*;
 import ar.edu.up.bugtracker.models.Incidencia;
@@ -14,11 +16,17 @@ public class ProyectoService {
 
     private final ProyectoDao proyectoDao;
     private final IncidenciaDao incidenciaDao;
+    private final ComentarioDao comentarioDao;
+    private final IncidenciaVersionDao incidenciaVersionDao;
     private final EntityManager em;
 
-    public ProyectoService(ProyectoDao proyectoDao, IncidenciaDao incidenciaDao, EntityManager em) {
+    public ProyectoService(ProyectoDao proyectoDao, IncidenciaDao incidenciaDao, 
+                          ComentarioDao comentarioDao, IncidenciaVersionDao incidenciaVersionDao, 
+                          EntityManager em) {
         this.proyectoDao = proyectoDao;
         this.incidenciaDao = incidenciaDao;
+        this.comentarioDao = comentarioDao;
+        this.incidenciaVersionDao = incidenciaVersionDao;
         this.em = em;
     }
 
@@ -121,22 +129,16 @@ public class ProyectoService {
                 Long incidenciaId = incidencia.getId();
                 
                 // Eliminar comentarios por incidencia_id
-                em.createQuery("DELETE FROM Comentario c WHERE c.incidencia.id = :incidenciaId")
-                        .setParameter("incidenciaId", incidenciaId)
-                        .executeUpdate();
+                comentarioDao.deleteByIncidenciaId(incidenciaId);
                 
                 // Eliminar versiones por incidencia_id
-                em.createQuery("DELETE FROM IncidenciaVersion iv WHERE iv.incidencia.id = :incidenciaId")
-                        .setParameter("incidenciaId", incidenciaId)
-                        .executeUpdate();
+                incidenciaVersionDao.deleteByIncidenciaId(incidenciaId);
             }
             em.flush();
             em.clear();
             
             // 3. Borrar las incidencias por proyecto
-            em.createQuery("DELETE FROM Incidencia i WHERE i.proyecto.id = :proyectoId")
-                    .setParameter("proyectoId", id)
-                    .executeUpdate();
+            incidenciaDao.deleteByProyectoId(id);
             em.flush();
             em.clear();
             
