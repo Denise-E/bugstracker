@@ -14,7 +14,7 @@ public class ProyectoService {
 
     private final ProyectoDao proyectoDao;
     private final IncidenciaDao incidenciaDao;
-    private final EntityManager em;
+    private final EntityManager em; // DENU
 
     public ProyectoService(ProyectoDao proyectoDao, IncidenciaDao incidenciaDao, EntityManager em) {
         this.proyectoDao = proyectoDao;
@@ -38,7 +38,7 @@ public class ProyectoService {
             Long id = proyectoDao.create(proyecto);
             commit();
             return id;
-        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+        } catch (BusinessException ex) {
             rollbackSilently();
             throw ex;
         } catch (RuntimeException ex) {
@@ -50,7 +50,7 @@ public class ProyectoService {
     public List<Proyecto> getAll() {
         try {
             return proyectoDao.findAll();
-        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+        } catch (BusinessException ex) {
             throw ex;
         } catch (RuntimeException ex) {
             throw new AppException("Error obteniendo lista de proyectos", ex);
@@ -64,7 +64,7 @@ public class ProyectoService {
                 throw new NotFoundException("Proyecto no encontrado");
             }
             return proyecto;
-        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+        } catch (BusinessException ex) {
             throw ex;
         } catch (RuntimeException ex) {
             throw new AppException("Error obteniendo detalle del proyecto", ex);
@@ -93,7 +93,7 @@ public class ProyectoService {
             begin();
             proyectoDao.update(existente);
             commit();
-        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+        } catch (BusinessException ex) {
             rollbackSilently();
             throw ex;
         } catch (RuntimeException ex) {
@@ -143,7 +143,7 @@ public class ProyectoService {
             // 4. Borrar el proyecto
             proyectoDao.deleteById(id);
             commit();
-        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+        } catch (BusinessException ex) {
             rollbackSilently();
             throw ex;
         } catch (RuntimeException ex) {
@@ -160,7 +160,7 @@ public class ProyectoService {
         if (!"ADMIN".equalsIgnoreCase(currentUser.getPerfil())) {
             throw new ForbiddenException(message);
         }
-    }
+    } // Denu
 
     private boolean isBlank(String s) {
         return s == null || s.trim().isEmpty();

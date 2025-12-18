@@ -93,7 +93,7 @@ public class ComentarioService {
                 em.flush(); // Asegurar que las operaciones pendientes se completen
                 
                 return comentarios;
-            } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+            } catch (BusinessException ex) {
                 throw ex;
             } catch (RuntimeException ex) {
                 rollbackSilently();
@@ -109,7 +109,7 @@ public class ComentarioService {
                 throw new NotFoundException("Comentario no encontrado");
             }
             return comentario;
-        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+        } catch (BusinessException ex) {
             throw ex;
         } catch (RuntimeException ex) {
             throw new AppException("Error obteniendo comentario", ex);
@@ -143,7 +143,7 @@ public class ComentarioService {
             begin();
             comentarioDao.update(comentario);
             commit();
-        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+        } catch (BusinessException ex) {
             rollbackSilently();
             throw ex;
         } catch (RuntimeException ex) {
@@ -173,7 +173,7 @@ public class ComentarioService {
             begin();
             comentarioDao.deleteById(id);
             commit();
-        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+        } catch (BusinessException ex) {
             rollbackSilently();
             throw ex;
         } catch (RuntimeException ex) {

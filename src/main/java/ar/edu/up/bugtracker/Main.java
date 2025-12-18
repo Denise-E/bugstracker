@@ -32,12 +32,12 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
         // Zona horaria coherente con la DB
-        System.setProperty("user.timezone", "UTC");
+        System.setProperty("user.timezone", "UTC"); // DENU
 
-        UIManager.put("OptionPane.yesButtonText", "Sí");
-        UIManager.put("OptionPane.noButtonText", "No");
-        UIManager.put("OptionPane.okButtonText", "Aceptar");
-        UIManager.put("OptionPane.cancelButtonText", "Cancelar");
+        UIManager.put("OptionPane.yesButtonText", "Sí"); // DENU
+        UIManager.put("OptionPane.noButtonText", "No"); // DENU
+        UIManager.put("OptionPane.okButtonText", "Aceptar"); // DENU
+        UIManager.put("OptionPane.cancelButtonText", "Cancelar"); // DENU
 
         // Cargar credenciales desde config/local.properties
         Properties p = new Properties();
@@ -58,13 +58,13 @@ public class Main {
                 "jakarta.persistence.jdbc.password", pass
         );
 
-        // Boot de JPA/Hibernate con overrides
+        // JPA/Hibernate
         EntityManagerFactory emf = Persistence.createEntityManagerFactory("bugtrackerPU", props);
         EntityManager em = emf.createEntityManager();
 
         // Inicialización clases
         UserDao usuarioDao = new UserDao(em);
-        UserService usuarioService = new UserService(usuarioDao, em);
+        UserService usuarioService = new UserService(usuarioDao, em); // DENU ¿Por que acá?
         UserController usuarioController = new UserController(usuarioService);
 
         PerfilUsuarioDao perfilDao = new PerfilUsuarioDao(em);
@@ -85,14 +85,14 @@ public class Main {
         ComentarioController comentarioController = new ComentarioController(comentarioService);
 
         // Levantar UI
-        SwingUtilities.invokeLater(() -> {
+        SwingUtilities.invokeLater(() -> { // DENU
             PanelManager app = new PanelManager(usuarioController, roleController, proyectoController,
                     incidenciaController, comentarioController);
             app.setVisible(true);
         });
 
         // Cierre
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> { // DENU
             try { if (em.isOpen()) em.close(); } catch (Exception ignored) {}
             try { if (emf.isOpen()) emf.close(); } catch (Exception ignored) {}
         }));

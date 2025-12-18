@@ -82,7 +82,7 @@ public class IncidenciaService {
 
             commit();
             return incidenciaId;
-        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+        } catch (BusinessException ex) {
             rollbackSilently();
             throw ex;
         } catch (RuntimeException ex) {
@@ -104,7 +104,7 @@ public class IncidenciaService {
     public List<Incidencia> findByProyecto(Long proyectoId) {
         try {
             return incidenciaDao.findByProyecto(proyectoId);
-        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+        } catch (BusinessException ex) {
             throw ex;
         } catch (RuntimeException ex) {
             throw new AppException("Error obteniendo incidencias del proyecto", ex);
@@ -148,7 +148,7 @@ public class IncidenciaService {
                 em.flush(); 
                 
                 return incidencia;
-            } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+            } catch (BusinessException ex) {
                 throw ex;
             } catch (RuntimeException ex) {
                 rollbackSilently();
@@ -209,7 +209,7 @@ public class IncidenciaService {
             
             incidenciaDao.update(existente);
             commit();
-        } catch (NotFoundException | ValidationException | AuthException | ForbiddenException | BusinessException ex) {
+        } catch (BusinessException ex) {
             rollbackSilently();
             throw ex;
         } catch (RuntimeException ex) {
