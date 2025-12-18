@@ -32,12 +32,12 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
         // Zona horaria coherente con la DB
-        System.setProperty("user.timezone", "UTC"); // DENU
+        System.setProperty("user.timezone", "UTC");
 
-        UIManager.put("OptionPane.yesButtonText", "Sí"); // DENU
-        UIManager.put("OptionPane.noButtonText", "No"); // DENU
-        UIManager.put("OptionPane.okButtonText", "Aceptar"); // DENU
-        UIManager.put("OptionPane.cancelButtonText", "Cancelar"); // DENU
+        UIManager.put("OptionPane.yesButtonText", "Sí");
+        UIManager.put("OptionPane.noButtonText", "No");
+        UIManager.put("OptionPane.okButtonText", "Aceptar");
+        UIManager.put("OptionPane.cancelButtonText", "Cancelar");
 
         // Cargar credenciales desde config/local.properties
         Properties p = new Properties();
@@ -64,7 +64,7 @@ public class Main {
 
         // Inicialización clases
         UserDao usuarioDao = new UserDao(em);
-        UserService usuarioService = new UserService(usuarioDao, em); // DENU ¿Por que acá?
+        UserService usuarioService = new UserService(usuarioDao, em);
         UserController usuarioController = new UserController(usuarioService);
 
         PerfilUsuarioDao perfilDao = new PerfilUsuarioDao(em);
@@ -85,14 +85,14 @@ public class Main {
         ComentarioController comentarioController = new ComentarioController(comentarioService);
 
         // Levantar UI
-        SwingUtilities.invokeLater(() -> { // DENU
+        SwingUtilities.invokeLater(() -> {
             PanelManager app = new PanelManager(usuarioController, roleController, proyectoController,
                     incidenciaController, comentarioController);
             app.setVisible(true);
         });
 
         // Cierre
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> { // DENU
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try { if (em.isOpen()) em.close(); } catch (Exception ignored) {}
             try { if (emf.isOpen()) emf.close(); } catch (Exception ignored) {}
         }));

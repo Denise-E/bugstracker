@@ -14,7 +14,7 @@ public class ProyectoService {
 
     private final ProyectoDao proyectoDao;
     private final IncidenciaDao incidenciaDao;
-    private final EntityManager em; // DENU
+    private final EntityManager em;
 
     public ProyectoService(ProyectoDao proyectoDao, IncidenciaDao incidenciaDao, EntityManager em) {
         this.proyectoDao = proyectoDao;
@@ -160,7 +160,7 @@ public class ProyectoService {
         if (!"ADMIN".equalsIgnoreCase(currentUser.getPerfil())) {
             throw new ForbiddenException(message);
         }
-    } // Denu
+    }
 
     private boolean isBlank(String s) {
         return s == null || s.trim().isEmpty();

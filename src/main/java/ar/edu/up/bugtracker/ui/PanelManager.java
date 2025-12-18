@@ -27,12 +27,11 @@ public class PanelManager extends JFrame {
     private final IncidenciaController incidenciaController;
     private final ComentarioController comentarioController;
 
-    // Estado de sesión
     private UserLoggedInDto currentUser;
 
     // Paneles
-    private final JPanel root;            // contenedor central (swaps)
-    private HeaderPanel headerPanel;      // aparece luego de login
+    private final JPanel root;
+    private HeaderPanel headerPanel;
 
     // Vistas
     private LoginPanel loginPanel;
@@ -58,7 +57,6 @@ public class PanelManager extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
-        // Contenedor central donde se montan las pantallas
         root = new JPanel(new BorderLayout());
         add(root, BorderLayout.CENTER);
 
@@ -66,9 +64,7 @@ public class PanelManager extends JFrame {
     }
 
     // Navegación
-
     public void showLogin() {
-        // Header fuera en login/registro
         if (headerPanel != null) remove(headerPanel);
         loginPanel = new LoginPanel(this, userController);
         swapCenter(loginPanel);
