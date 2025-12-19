@@ -10,7 +10,6 @@ import java.util.function.Consumer;
 public class HomePanel extends JPanel {
 
     private ProyectosListPanel proyectosListPanel;
-    private ProyectoDetailPanel proyectoDetailPanel;
 
     public HomePanel(ProyectoController proyectoController, UserLoggedInDto currentUser, Consumer<Long> onViewProyecto) {
         setLayout(new BorderLayout());

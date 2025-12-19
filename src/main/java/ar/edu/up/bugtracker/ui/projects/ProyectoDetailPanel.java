@@ -1,10 +1,8 @@
 package ar.edu.up.bugtracker.ui.projects;
 
-import ar.edu.up.bugtracker.controller.ComentarioController;
 import ar.edu.up.bugtracker.controller.IncidenciaController;
 import ar.edu.up.bugtracker.controller.ProyectoController;
 import ar.edu.up.bugtracker.controller.UserController;
-import ar.edu.up.bugtracker.exceptions.NotFoundException;
 import ar.edu.up.bugtracker.models.Incidencia;
 import ar.edu.up.bugtracker.models.Proyecto;
 import ar.edu.up.bugtracker.service.dto.UserLoggedInDto;
@@ -25,7 +23,6 @@ public class ProyectoDetailPanel extends JPanel {
 
     private final ProyectoController proyectoController;
     private final IncidenciaController incidenciaController;
-    private final ComentarioController comentarioController;
     private final UserController userController;
     private final UserLoggedInDto currentUser;
     private final Long proyectoId;
@@ -39,14 +36,12 @@ public class ProyectoDetailPanel extends JPanel {
 
     public ProyectoDetailPanel(ProyectoController proyectoController,
                                IncidenciaController incidenciaController,
-                               ComentarioController comentarioController,
                                UserController userController,
                                UserLoggedInDto currentUser,
                                Long proyectoId,
                                Consumer<Long> onViewIncidencia) {
         this.proyectoController = proyectoController;
         this.incidenciaController = incidenciaController;
-        this.comentarioController = comentarioController;
         this.userController = userController;
         this.currentUser = currentUser;
         this.proyectoId = proyectoId;

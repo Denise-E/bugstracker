@@ -151,7 +151,6 @@ public class PanelManager extends JFrame {
         proyectoDetailPanel = new ProyectoDetailPanel(
                 proyectoController,
                 incidenciaController,
-                comentarioController,
                 userController,
                 currentUser,
                 proyectoId,

@@ -121,10 +121,10 @@ public class ProyectoService {
         try {
             begin();
             
-            // 1. Buscar todas las incidencias por ID del proyecto
+            // Buscar todas las incidencias por ID del proyecto
             List<Incidencia> incidencias = incidenciaDao.findByProyecto(id);
             
-            // 2. Para todas las incidencias borrar todos los registros de las tablas "comentario" e "incidencia_version" por incidencia_id
+            // Para todas las incidencias borrar todos los registros de las tablas "comentario" e "incidencia_version" por incidencia_id
             for (Incidencia incidencia : incidencias) {
                 Long incidenciaId = incidencia.getId();
                 
@@ -137,12 +137,12 @@ public class ProyectoService {
             em.flush();
             em.clear();
             
-            // 3. Borrar las incidencias por proyecto
+            // Borrar las incidencias por proyecto
             incidenciaDao.deleteByProyectoId(id);
             em.flush();
             em.clear();
             
-            // 4. Borrar el proyecto
+            // Borrar el proyecto
             proyectoDao.deleteById(id);
             commit();
         } catch (BusinessException ex) {

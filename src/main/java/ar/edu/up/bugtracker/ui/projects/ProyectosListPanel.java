@@ -52,7 +52,6 @@ public class ProyectosListPanel extends BaseListPanel<Proyecto> {
             topPanel.add(btnCrear, BorderLayout.EAST);
         }
 
-        // Mover el scrollPane que BaseListPanel agregó al CENTER y agregar el topPanel al NORTH
         Component[] components = getComponents();
         for (Component comp : components) {
             if (comp instanceof JScrollPane) {
